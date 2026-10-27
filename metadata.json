@@ -1,0 +1,12 @@
+{
+  "name": "JARVIS AI Assistant",
+  "description": "Voice-controlled futuristic JARVIS assistant for managing files, folders, taking screenshots with vision analysis, rich notes, and automated video note-taking.",
+  "requestFramePermissions": [
+    "microphone",
+    "display-capture"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
+
