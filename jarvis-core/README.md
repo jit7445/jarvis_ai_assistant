@@ -13,6 +13,28 @@ pip install -r requirements.txt
 
 Activate `.venv` in every new terminal.
 
+## Speech-to-text engine
+
+whisper.cpp is built from source, pinned to v1.9.1, using the venv's arm64 cmake. If Homebrew lives in `/usr/local`, its cmake is x86_64 and builds without Metal.
+
+```bash
+git clone --depth 1 --branch v1.9.1 https://github.com/ggml-org/whisper.cpp.git
+cd whisper.cpp
+cmake -B build -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF
+cmake --build build -j 4 --config Release --target whisper-cli
+sh ./models/download-ggml-model.sh base.en
+```
+
+Static linking keeps the binary working if the folder moves. The first run takes about 14 s while Metal compiles its shaders; later runs take about 0.4 s for a 5 s clip.
+
+## Transcription benchmark
+
+```bash
+scripts/bench_whisper.sh
+```
+
+Refuses to run while the network is reachable. Runs five transcriptions of `workspace/mic_test.wav` and writes timings to `docs/phase2_offline.log`.
+
 ## Microphone check
 
 ```bash
