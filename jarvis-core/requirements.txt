@@ -1,4 +1,0 @@
-numpy==2.4.6
-scipy==1.17.1
-sounddevice==0.5.6
-cmake==4.4.4

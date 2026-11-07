@@ -22,6 +22,7 @@ Built phase by phase from the Jarvis V1 plan.
 | 0 | Environment | done |
 | 1 | Microphone capture | done |
 | 2 | Local transcription | done |
-| 3-12 | Speech output through wake word | not started |
+| 3 | Speech output | done |
+| 4-12 | Command router through wake word | not started |
 
 The gateway currently holds an earlier web prototype. It is reworked into the plan's gateway in Phase 10.

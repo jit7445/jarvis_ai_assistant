@@ -8,10 +8,20 @@ The Python service that owns the machine. Requires an Apple Silicon Mac and Pyth
 cd jarvis-core
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e ".[dev]"
+python -m pytest
 ```
 
-Activate `.venv` in every new terminal.
+Activate `.venv` in every new terminal. Dependencies are pinned in `pyproject.toml`; `dev` adds pytest and the arm64 cmake.
+
+## Speech output
+
+```python
+from jarvis.speech.tts import speak
+speak("Your assistant is ready.")
+```
+
+Wraps macOS `say`. Text goes in on stdin, never as an argument, so a sentence like `-o file` or `"; ls` is read aloud rather than parsed. The voice comes from `jarvis.config.VOICE` and must be installed (`say -v '?'`). `python scripts/speak_test.py` plays sample lines in Samantha and Rishi.
 
 ## Speech-to-text engine
 
@@ -47,6 +57,7 @@ Records 5 seconds at 16 kHz mono to `workspace/mic_test.wav`. The first run trig
 
 | Path | Contents | In git |
 | --- | --- | --- |
+| `src/jarvis/` | The package: `speech/`, `config/` | yes |
 | `scripts/` | Manual hardware checks | yes |
 | `tests/` | pytest suite | yes |
 | `docs/` | Phase results and measurements | yes |
