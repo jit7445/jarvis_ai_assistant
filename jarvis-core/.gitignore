@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.wav
+.env
+.env.*
+models/
+whisper.cpp/
+node_modules/
+workspace/
