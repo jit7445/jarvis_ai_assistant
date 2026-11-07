@@ -29,7 +29,7 @@ _PATTERNS: list[tuple[re.Pattern[str], str]] = [
         rf"^(?:what's|what is|whats) (?:in|inside) (?:my|the) workspace$"
         rf"|^(?:list|show)(?: me)? (?:what's {_WORKSPACE}|(?:my|the) workspace)$", re.IGNORECASE),
      "fs.list_dir"),
-    (re.compile(r"^open (?:up )?(?!(?:the )?(?:app|it|that|this)$)(?:the )?(?P<app_name>.+?)(?: app)?$",
+    (re.compile(r"^open (?:up )?(?!(?:the |my )?(?:app|it|that|this)$)(?:the |my )?(?P<app_name>.+?)(?: app)?$",
                 re.IGNORECASE),
      "app.open"),
 ]

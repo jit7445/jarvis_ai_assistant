@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Local voice assistant service for macOS on Apple Silicon"
 requires-python = ">=3.11"
 dependencies = [
+    "google-genai==2.33.0",
     "numpy==2.4.6",
     "scipy==1.17.1",
     "sounddevice==0.5.6",

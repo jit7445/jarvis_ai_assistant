@@ -22,7 +22,16 @@ ALLOWED_APPS = {
     "notes": "Notes",
     "music": "Music",
     "calendar": "Calendar",
+    "chrome": "Google Chrome",
+    "google chrome": "Google Chrome",
+    "google": "Google Chrome",
+    "crome": "Google Chrome",
 }
 # Refused even if added above: any of these gives a voice command shell or system access.
 BANNED_APPS = {"terminal", "iterm", "iterm2", "script editor", "keychain access", "system settings",
                "system preferences", "automator", "shortcuts", "console", "activity monitor"}
+
+# Used only when the router does not recognise a sentence and GEMINI_API_KEY is set.
+GEMINI_MODEL = "gemini-3.5-flash-lite"
+# The Gemini API rejects any deadline under 10 s with HTTP 400.
+PLANNER_TIMEOUT_SECONDS = 10.0

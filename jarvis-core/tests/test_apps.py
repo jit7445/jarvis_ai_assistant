@@ -28,6 +28,8 @@ def calls(monkeypatch):
 @pytest.mark.parametrize("spoken, app", [
     ("safari", "Safari"), ("Safari", "Safari"), (" SAFARI ", "Safari"),
     ("notes", "Notes"), ("Music", "Music"), ("calendar", "Calendar"),
+    ("Chrome", "Google Chrome"), ("chrome browser", "Google Chrome"), ("Google", "Google Chrome"),
+    ("Google Chrome", "Google Chrome"), ("crome", "Google Chrome"), ("Safari browser", "Safari"),
 ])
 def test_allowlisted_apps_open(spoken, app, calls):
     assert apps.open_app(spoken).message == f"Opening {app}."
@@ -37,7 +39,7 @@ def test_allowlisted_apps_open(spoken, app, calls):
 @pytest.mark.parametrize("spoken", [
     "Terminal", "iTerm", "Script Editor", "Keychain Access", "System Settings", "Finder",
     "Mail", "", " ", "safari; rm -rf ~", "Safari.app", "/Applications/Safari.app", "-n Safari",
-    "safari notes", "../Safari", None, ["Safari"],
+    "safari notes", "../Safari", None, ["Safari"], "browser", " browser", "terminal browser",
 ])
 def test_unlisted_names_raise_and_never_reach_open(spoken, calls):
     with pytest.raises(PermissionError):
@@ -75,6 +77,10 @@ def test_default_allowlist_has_no_banned_app():
     ("open the Notes app", "Opening Notes."),
     ("open Terminal", "That app isn't on my list, so I didn't open it."),
     ("open up System Settings", "That app isn't on my list, so I didn't open it."),
+    (" Open my Chrome.", "Opening Google Chrome."),
+    ("open my chrome browser", "Opening Google Chrome."),
+    ("open Google", "Opening Google Chrome."),
+    ("open crome", "Opening Google Chrome."),
 ])
 def test_executor_replies(text, spoken):
     from jarvis.core.wake import split_wake

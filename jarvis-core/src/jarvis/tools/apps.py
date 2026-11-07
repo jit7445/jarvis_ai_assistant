@@ -9,6 +9,8 @@ def resolve(spoken_name: str) -> str:
     if not isinstance(spoken_name, str):
         raise PermissionError("not allowed")
     key = " ".join(spoken_name.split()).lower()
+    if key.endswith(" browser"):
+        key = key.removesuffix(" browser")
     app = config.ALLOWED_APPS.get(key)
     if app is None or key in config.BANNED_APPS or app.lower() in config.BANNED_APPS:
         raise PermissionError("not allowed")

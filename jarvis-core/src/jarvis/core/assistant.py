@@ -6,10 +6,14 @@ from enum import Enum
 import numpy as np
 
 from jarvis.core.confirm import parse_answer
+from jarvis.core.intent import Intent
+from jarvis.core.proposal import to_intent
 from jarvis.core.router import route
 from jarvis.core.wake import is_stop
+from jarvis.planner import Planner, PlannerBusy, PlannerError, PlannerSetup
 from jarvis.speech.stt import is_noise, is_silent
 from jarvis.tools.executor import execute
+from jarvis.tools.registry import InvalidIntent
 
 CONFIRM_SECONDS = 3.0
 
@@ -32,6 +36,7 @@ class Hooks:
     listen: Callable[[float], np.ndarray]
     preview_seconds: float = 0.6
     quit: Callable[[], None] = lambda: None
+    planner: Planner | None = None
 
 
 def _reply(hooks: Hooks, state: State, message: str) -> None:
@@ -65,15 +70,41 @@ def handle_text(text: str, hooks: Hooks) -> None:
         _reply(hooks, State.FAILED, "Something went wrong, so I did nothing.")
 
 
+def _ask_planner(text: str, hooks: Hooks) -> Intent | None:
+    """The planner's suggestion once it passes the same checks as the router, or None after
+    saying why not."""
+    if hooks.planner is None:
+        _reply(hooks, State.FAILED, "Sorry, I didn't catch that.")
+        return None
+    try:
+        proposal = hooks.planner.propose(text)
+    except PlannerBusy:
+        _reply(hooks, State.FAILED, "Gemini is busy right now, so I did nothing.")
+        return None
+    except PlannerSetup:
+        _reply(hooks, State.FAILED, "Gemini refused my request. Check the API key.")
+        return None
+    except PlannerError:
+        _reply(hooks, State.FAILED, "I couldn't reach Gemini, so I did nothing.")
+        return None
+    try:
+        intent = to_intent(proposal)
+    except (InvalidIntent, PermissionError):
+        _reply(hooks, State.FAILED, "Gemini suggested something I can't do, so I did nothing.")
+        return None
+    if intent is None:
+        _reply(hooks, State.FAILED, "Sorry, I didn't catch that.")
+    return intent
+
+
 def _act(text: str, hooks: Hooks) -> None:
     if is_stop(text, addressed=True):
         _reply(hooks, State.DONE, "Goodbye.")
         hooks.quit()
         return
     hooks.show(State.HEARD, text)
-    intent = route(text)
+    intent = route(text) or _ask_planner(text, hooks)
     if intent is None:
-        _reply(hooks, State.FAILED, "Sorry, I didn't catch that.")
         return
     # Leave the transcript on screen long enough to spot a mishearing before anything runs.
     time.sleep(hooks.preview_seconds)

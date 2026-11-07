@@ -21,6 +21,7 @@ jarvis              # say "Jarvis ..." or hold the right Option key
 jarvis --no-wake    # hotkey only; microphone closed until you press it
 jarvis --once       # listen for 5 s now, no hotkey or permissions needed
 jarvis --wav workspace/route_test.wav --mute --verbose
+jarvis --offline     # never ask Gemini, even with a key set
 ```
 
 **Wake word.** Say "Jarvis", "hi Jarvis", "hello Jarvis" or "hey Jarvis", either alone (Jarvis answers "Yes?" and waits 6 s for the command) or followed by the command in one sentence. The microphone stays open while Jarvis runs: a loudness detector cuts speech into sentences, whisper transcribes each one locally, and anything not starting with the wake phrase is dropped without being shown, printed or saved. The name in the middle of a sentence ("I told Jarvis...") does not count. Jarvis stops listening while it talks, so it cannot wake itself.
@@ -65,9 +66,21 @@ python scripts/route_test.py --run                              # speak, then ac
 
 With `--run`, the command is executed through `jarvis.tools.executor.execute` and the result is spoken. Overwriting a note asks for a spoken yes first.
 
+## Gemini fallback
+
+When the router does not recognise a sentence, Jarvis can ask Gemini to map it onto one of the same tools. It is off until you set a key from aistudio.google.com/apikey in your shell profile (`~/.zshrc`), never in the repo:
+
+```bash
+export GEMINI_API_KEY="..."
+python scripts/plan_test.py I need a place to keep my recipes        # shows the proposal, runs nothing
+python scripts/plan_test.py --run I need a place to keep my recipes  # runs it if accepted
+```
+
+Only the sentence and the tool list are sent. The reply is checked like any untrusted input: known tool, exact arguments, `safe_path` on names, allowlist for apps, spoken yes for overwrites. No network, a rate limit or a bad reply each get a spoken answer and change nothing. On the free tier Google may use requests to improve its products. Details in `docs/phase7_results.md`.
+
 ## Opening apps
 
-"Open Safari" opens only apps listed in `ALLOWED_APPS` in `src/jarvis/config/__init__.py` (Safari, Notes, Music and Calendar by default). Any other name is refused aloud and never reaches `open`. Terminal, iTerm, Script Editor, Keychain Access, System Settings and a few others sit in `BANNED_APPS` and stay refused even if added to the allowlist. To add an app, add a line such as `"slack": "Slack",` with the spoken name in lowercase. Details in `docs/phase6_results.md`.
+"Open Safari" opens only apps listed in `ALLOWED_APPS` in `src/jarvis/config/__init__.py` (Safari, Notes, Music, Calendar and Chrome). Any other name is refused aloud and never reaches `open`. Terminal, iTerm, Script Editor, Keychain Access, System Settings and a few others sit in `BANNED_APPS` and stay refused even if added to the allowlist. To add an app, add a line such as `"slack": "Slack",` with the spoken name in lowercase. Details in `docs/phase6_results.md`.
 
 ## Workspace
 
@@ -95,7 +108,7 @@ Records 5 seconds at 16 kHz mono to `workspace/mic_test.wav`. The first run trig
 
 | Path | Contents | In git |
 | --- | --- | --- |
-| `src/jarvis/` | The package: `app.py` (entry point), `core/` (intent, router, confirmation, assistant pipeline), `tools/` (registry, safe paths, file tools, app launcher, executor), `speech/` (whisper, say), `audio/` (recorder), `ui/` (overlay), `config/` | yes |
+| `src/jarvis/` | The package: `app.py` (entry point), `core/` (intent, router, confirmation, assistant pipeline), `tools/` (registry, safe paths, file tools, app launcher, executor), `speech/` (whisper, say), `audio/` (recorder), `ui/` (overlay), `planner/` (Gemini fallback), `config/` | yes |
 | `scripts/` | Manual hardware checks | yes |
 | `tests/` | pytest suite | yes |
 | `docs/` | Phase results and measurements | yes |

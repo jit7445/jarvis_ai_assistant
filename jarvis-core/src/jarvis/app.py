@@ -52,7 +52,7 @@ def cue_then_listen() -> None:
 
 class Jarvis:
     def __init__(self, mute: bool = False, quit_when_done: bool = False,
-                 verbose: bool = False, wake: bool = False) -> None:
+                 verbose: bool = False, wake: bool = False, planner=None) -> None:
         self.overlay = Overlay(on_close=self.close)
         self.recorder = Recorder(on_level=self._level)
         self.listener = Listener(on_utterance=self._utterance, on_level=self._wake_level)
@@ -60,6 +60,7 @@ class Jarvis:
         self.quit_when_done = quit_when_done
         self.verbose = verbose
         self.wake = wake
+        self.planner = planner
         self.jobs: queue.Queue[tuple[str, np.ndarray]] = queue.Queue()
         self.utterances: queue.Queue[np.ndarray] = queue.Queue()
         self.awaiting_command = threading.Event()
@@ -106,7 +107,8 @@ class Jarvis:
 
     def _hooks(self) -> Hooks:
         return Hooks(show=self._show, speak=self._speak, transcribe=stt.transcribe,
-                     listen=self._listen, quit=self._quit)
+                     listen=self._listen, quit=self._quit,
+                     planner=self.planner)
 
     @property
     def idle_text(self) -> str:
@@ -256,14 +258,26 @@ def main() -> None:
                         help="hotkey only; do not keep the microphone open for 'Jarvis'")
     parser.add_argument("--mute", action="store_true", help="show replies without speaking")
     parser.add_argument("--verbose", action="store_true", help="print each state to the terminal")
+    parser.add_argument("--offline", action="store_true",
+                        help="never ask Gemini, even when GEMINI_API_KEY is set")
     args = parser.parse_args()
+
+    planner = None
+    if not args.offline:
+        from jarvis.planner import gemini
+        planner = gemini.from_environment()
 
     config.WORKSPACE.mkdir(exist_ok=True)
     app = AppKit.NSApplication.sharedApplication()
     app.setActivationPolicy_(AppKit.NSApplicationActivationPolicyAccessory)
     one_shot = bool(args.once or args.wav)
     jarvis = Jarvis(mute=args.mute, quit_when_done=one_shot, verbose=args.verbose,
-                    wake=not (args.no_wake or one_shot))
+                    wake=not (args.no_wake or one_shot), planner=planner)
+    if planner is not None:
+        print(f"Gemini fallback on ({planner.model}); only unrecognised sentences are sent.",
+              flush=True)
+    elif not args.offline:
+        print("Gemini fallback off: GEMINI_API_KEY is not set.", flush=True)
 
     if args.wav:
         _, audio = read(args.wav)

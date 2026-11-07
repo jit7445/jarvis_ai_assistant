@@ -18,6 +18,9 @@ Adding an app is a deliberate edit to `config/__init__.py`. No voice command can
 | notes | Notes |
 | music | Music |
 | calendar | Calendar |
+| chrome, google chrome, google, crome | Google Chrome (added 2026-11-08) |
+
+A trailing "browser" is ignored, so "open my Chrome browser" works. The router also drops "my", "the" and "up".
 
 ## Replies
 
