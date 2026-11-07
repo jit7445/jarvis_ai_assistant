@@ -25,7 +25,8 @@ Built phase by phase from the Jarvis V1 plan.
 | 3 | Speech output | done |
 | 4 | Command router | done |
 | 5 | Workspace file tools | done |
-| 6-10 | App launcher through two-service split | not started |
+| 6 | App launcher (allowlist only) | done |
+| 7-10 | Gemini fallback through two-service split | not started |
 | 11 | Overlay (Siri-style card, sound cues, push-to-talk) | done early |
 | 12 | Wake word (whisper-based) and stop by voice | done early, false-activation count pending |
 

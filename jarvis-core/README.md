@@ -65,6 +65,10 @@ python scripts/route_test.py --run                              # speak, then ac
 
 With `--run`, the command is executed through `jarvis.tools.executor.execute` and the result is spoken. Overwriting a note asks for a spoken yes first.
 
+## Opening apps
+
+"Open Safari" opens only apps listed in `ALLOWED_APPS` in `src/jarvis/config/__init__.py` (Safari, Notes, Music and Calendar by default). Any other name is refused aloud and never reaches `open`. Terminal, iTerm, Script Editor, Keychain Access, System Settings and a few others sit in `BANNED_APPS` and stay refused even if added to the allowlist. To add an app, add a line such as `"slack": "Slack",` with the spoken name in lowercase. Details in `docs/phase6_results.md`.
+
 ## Workspace
 
 Jarvis reads and writes only inside `workspace/`. Every path goes through `jarvis.tools.paths.safe_path`, which refuses `..`, absolute paths, `~`, hidden names and symlinks that lead outside. Details in `docs/phase5_results.md`.
@@ -91,7 +95,7 @@ Records 5 seconds at 16 kHz mono to `workspace/mic_test.wav`. The first run trig
 
 | Path | Contents | In git |
 | --- | --- | --- |
-| `src/jarvis/` | The package: `app.py` (entry point), `core/` (intent, router, confirmation, assistant pipeline), `tools/` (registry, safe paths, file tools, executor), `speech/` (whisper, say), `audio/` (recorder), `ui/` (overlay), `config/` | yes |
+| `src/jarvis/` | The package: `app.py` (entry point), `core/` (intent, router, confirmation, assistant pipeline), `tools/` (registry, safe paths, file tools, app launcher, executor), `speech/` (whisper, say), `audio/` (recorder), `ui/` (overlay), `config/` | yes |
 | `scripts/` | Manual hardware checks | yes |
 | `tests/` | pytest suite | yes |
 | `docs/` | Phase results and measurements | yes |

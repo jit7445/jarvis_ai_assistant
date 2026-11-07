@@ -1,16 +1,28 @@
+import subprocess
 from collections.abc import Callable
 from typing import Any
 
 from jarvis.core.intent import Intent
 from jarvis.core.result import Result
-from jarvis.tools import fs
+from jarvis.tools import apps, fs
 from jarvis.tools.registry import InvalidIntent, check
+
+
+def _open_app(args: dict[str, Any], _: bool) -> Result:
+    try:
+        return apps.open_app(args["app_name"])
+    except PermissionError:
+        return Result(False, "That app isn't on my list, so I didn't open it.")
+    except (subprocess.SubprocessError, OSError):
+        return Result(False, "I couldn't open that app.")
+
 
 _HANDLERS: dict[str, Callable[[dict[str, Any], bool], Result]] = {
     "fs.make_dir": lambda a, _: fs.make_dir(a["name"]),
     "fs.write_file": lambda a, confirm: fs.write_file(a["name"], a["body"], confirm),
     "fs.read_file": lambda a, _: fs.read_file(a["name"]),
     "fs.list_dir": lambda a, _: fs.list_dir(),
+    "app.open": _open_app,
 }
 
 

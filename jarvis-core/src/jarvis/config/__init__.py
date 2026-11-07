@@ -15,3 +15,14 @@ WHISPER_PROMPT = (
     "Jarvis, create a folder called Projects. Jarvis, make a note called groceries. "
     "Jarvis, read me groceries. Jarvis, what's in my workspace? Jarvis, open Safari."
 )
+
+# Spoken name (lowercase) to the macOS app it opens. Only you edit this; no command can change it.
+ALLOWED_APPS = {
+    "safari": "Safari",
+    "notes": "Notes",
+    "music": "Music",
+    "calendar": "Calendar",
+}
+# Refused even if added above: any of these gives a voice command shell or system access.
+BANNED_APPS = {"terminal", "iterm", "iterm2", "script editor", "keychain access", "system settings",
+               "system preferences", "automator", "shortcuts", "console", "activity monitor"}

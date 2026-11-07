@@ -160,7 +160,7 @@ def test_symlinked_note_is_not_followed(workspace, outside, tmp_path):
 @pytest.mark.parametrize("intent, message", [
     (Intent("shell.run", {"cmd": "rm -rf ~"}), "I didn't understand that, so I did nothing."),
     (Intent("fs.make_dir", {"name": "x", "extra": 1}), "I didn't understand that, so I did nothing."),
-    (Intent("app.open", {"app_name": "Safari"}), "I can't do that yet."),
+    (Intent("app.open", {"app_name": "Terminal"}), "That app isn't on my list, so I didn't open it."),
 ])
 def test_executor_refusals(intent, message, workspace):
     assert execute(intent).message == message
