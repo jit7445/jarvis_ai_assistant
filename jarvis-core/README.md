@@ -14,6 +14,23 @@ python -m pytest
 
 Activate `.venv` in every new terminal. Dependencies are pinned in `pyproject.toml`; `dev` adds pytest and the arm64 cmake.
 
+## Running Jarvis
+
+```bash
+jarvis              # say "Jarvis ..." or hold the right Option key
+jarvis --no-wake    # hotkey only; microphone closed until you press it
+jarvis --once       # listen for 5 s now, no hotkey or permissions needed
+jarvis --wav workspace/route_test.wav --mute --verbose
+```
+
+**Wake word.** Say "Jarvis", "hi Jarvis", "hello Jarvis" or "hey Jarvis", either alone (Jarvis answers "Yes?" and waits 6 s for the command) or followed by the command in one sentence. The microphone stays open while Jarvis runs: a loudness detector cuts speech into sentences, whisper transcribes each one locally, and anything not starting with the wake phrase is dropped without being shown, printed or saved. The name in the middle of a sentence ("I told Jarvis...") does not count. Jarvis stops listening while it talks, so it cannot wake itself.
+
+**Stopping by voice.** "Close Jarvis", "stop Jarvis", "quit Jarvis", "goodbye Jarvis" or "Jarvis, stop" makes Jarvis say goodbye and exit, like Ctrl+C. Overheard speech must include the name, and the whole sentence must be the request, so "stop the music" or "we should stop Jarvis from..." do nothing. After the wake word or with the hotkey, a bare "stop" or "close" is enough.
+
+A Siri-style overlay appears at the bottom of the screen: a spinning orb whose glow follows your voice, the transcript before anything runs, then the reply. Chimes mark start, stop and errors. Overwrites ask for a spoken yes.
+
+The hotkey needs Accessibility permission for the app you launch Jarvis from (System Settings > Privacy & Security > Accessibility), and that app must be restarted after granting it. Pressing any other key while holding Option cancels the recording, so typing Option shortcuts never triggers Jarvis.
+
 ## Speech output
 
 ```python
@@ -74,7 +91,7 @@ Records 5 seconds at 16 kHz mono to `workspace/mic_test.wav`. The first run trig
 
 | Path | Contents | In git |
 | --- | --- | --- |
-| `src/jarvis/` | The package: `core/` (intent, router, confirmation), `tools/` (registry, safe paths, file tools, executor), `speech/`, `config/` | yes |
+| `src/jarvis/` | The package: `app.py` (entry point), `core/` (intent, router, confirmation, assistant pipeline), `tools/` (registry, safe paths, file tools, executor), `speech/` (whisper, say), `audio/` (recorder), `ui/` (overlay), `config/` | yes |
 | `scripts/` | Manual hardware checks | yes |
 | `tests/` | pytest suite | yes |
 | `docs/` | Phase results and measurements | yes |
