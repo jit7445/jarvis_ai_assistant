@@ -58,3 +58,17 @@ whisper.cpp's `--prompt` biases the decoder towards expected vocabulary. Results
 The prompt uses names the user is unlikely to say (Projects, groceries) so it does not bias real folder names; "Research" still transcribed correctly.
 
 Prompts can make Whisper repeat the prompt on silence, which here would mean executing a command nobody said. Tested on 5 s of silence, low hiss, loud white noise and 50 Hz hum: outputs were `[BLANK_AUDIO]`, "(water rushing)" and "(music fades)". None reproduced a command, and the router returns `None` for all of them. Phase 9 should repeat this check on real room noise.
+
+## Wider phrasing (2026-11-08)
+
+The router now accepts many natural forms, all offline. Fillers such as "please", "can you", "I want you to", "let's", "for me" and "now" are dropped first.
+
+| Tool | Examples that work |
+| --- | --- |
+| Folder | create a Projects folder; make me a new folder for invoices; add a folder named Travel 2026 to my workspace; I need a folder called Taxes; new folder Recipes; set up a directory called Backups |
+| Note | make a note called groceries saying milk; take a note called meeting: call Ravi at 5; write a todo note saying finish phase 8; new note ideas; jot down a note called dentist that says Friday at 10 |
+| Read | read groceries; read me my groceries note; what's in the note called groceries; what does groceries say; show me the note called dentist; open my note ideas |
+| List | what do I have; list my files; show me my notes; what files do I have; list everything |
+| App | open, launch, start, run, fire up, bring up, switch to (Safari, Chrome, ...) |
+
+An app the allowlist does not know ("open my browser", "run the tests") is no longer refused by the router; it goes to the Gemini fallback, which can map "my browser" to an allowlisted app. Banned apps (Terminal, iTerm, ...) are still refused by name. Sentences with no name ("create a folder", "make a note saying buy milk") also go to the fallback rather than guessing.
