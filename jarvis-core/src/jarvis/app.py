@@ -53,7 +53,7 @@ def cue_then_listen() -> None:
 class Jarvis:
     def __init__(self, mute: bool = False, quit_when_done: bool = False,
                  verbose: bool = False, wake: bool = False) -> None:
-        self.overlay = Overlay()
+        self.overlay = Overlay(on_close=self.close)
         self.recorder = Recorder(on_level=self._level)
         self.listener = Listener(on_utterance=self._utterance, on_level=self._wake_level)
         self.mute = mute
@@ -107,6 +107,22 @@ class Jarvis:
     def _hooks(self) -> Hooks:
         return Hooks(show=self._show, speak=self._speak, transcribe=stt.transcribe,
                      listen=self._listen, quit=self._quit)
+
+    @property
+    def idle_text(self) -> str:
+        return "Say \u201cJarvis\u201d to talk." if self.wake else "Hold right Option to talk."
+
+    def settle(self, after: float = 0.0) -> None:
+        """Back to the idle card while Jarvis keeps running; one-shot runs just hide."""
+        if self.quit_when_done or self.quitting:
+            self.overlay.hide(after)
+        else:
+            self.overlay.rest(self.idle_text, after)
+
+    def close(self) -> None:
+        print("Jarvis closed.", flush=True)
+        self.overlay.dismiss()
+        AppHelper.callLater(0.4, AppHelper.stopEventLoop)
 
     def _quit(self) -> None:
         self.quitting = True
@@ -163,7 +179,7 @@ class Jarvis:
                 self.log("error", "listener job failed")
             finally:
                 if shown:
-                    AppHelper.callAfter(self.overlay.hide, 1.5)
+                    AppHelper.callAfter(self.settle, 1.5)
                 while not self.jobs.empty():
                     self.jobs.get_nowait()
                 time.sleep(COOLDOWN_SECONDS)
@@ -198,7 +214,7 @@ class Jarvis:
         self.holding = False
         audio = self.recorder.stop()
         if self.cancelled or time.monotonic() - self.pressed_at < MIN_HOLD_SECONDS:
-            self.overlay.hide()
+            self.settle()
             self.listener.enabled = self.wake
             return
         cue("stop")
@@ -276,6 +292,7 @@ def main() -> None:
         else:
             lines.append("  The Option hotkey needs Accessibility permission for this terminal app.")
         print("\n".join(lines), flush=True)
+        AppHelper.callLater(0.2, jarvis.settle)
 
     signal.signal(signal.SIGINT, lambda *_: AppHelper.stopEventLoop())
     signal.signal(signal.SIGTERM, lambda *_: AppHelper.stopEventLoop())

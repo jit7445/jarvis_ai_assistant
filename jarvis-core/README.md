@@ -27,7 +27,7 @@ jarvis --wav workspace/route_test.wav --mute --verbose
 
 **Stopping by voice.** "Close Jarvis", "stop Jarvis", "quit Jarvis", "goodbye Jarvis" or "Jarvis, stop" makes Jarvis say goodbye and exit, like Ctrl+C. Overheard speech must include the name, and the whole sentence must be the request, so "stop the music" or "we should stop Jarvis from..." do nothing. After the wake word or with the hotkey, a bare "stop" or "close" is enough.
 
-A Siri-style overlay appears at the bottom of the screen: a spinning orb whose glow follows your voice, the transcript before anything runs, then the reply. Chimes mark start, stop and errors. Overwrites ask for a spoken yes.
+A compact HUD card appears at the bottom of the screen: a reactor of counter-rotating cyan rings whose glow follows your voice and whose colour shows the state, the transcript before anything runs, then the reply. The card stays on screen while Jarvis runs, resting on "Say Jarvis to talk" between commands; drag it anywhere, and its X button closes Jarvis like "close Jarvis" does. Chimes mark start, stop and errors. Overwrites ask for a spoken yes.
 
 The hotkey needs Accessibility permission for the app you launch Jarvis from (System Settings > Privacy & Security > Accessibility), and that app must be restarted after granting it. Pressing any other key while holding Option cancels the recording, so typing Option shortcuts never triggers Jarvis.
 

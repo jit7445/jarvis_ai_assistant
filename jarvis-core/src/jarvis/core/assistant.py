@@ -15,6 +15,7 @@ CONFIRM_SECONDS = 3.0
 
 
 class State(Enum):
+    IDLE = "idle"
     LISTENING = "listening"
     THINKING = "thinking"
     HEARD = "heard"
