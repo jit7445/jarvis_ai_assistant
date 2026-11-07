@@ -43,7 +43,14 @@ Static linking keeps the binary working if the folder moves. The first run takes
 python scripts/route_test.py create a folder called Research   # typed
 python scripts/route_test.py --wav workspace/mic_test.wav       # from a recording
 python scripts/route_test.py                                    # speak for 5 s
+python scripts/route_test.py --run                              # speak, then act and reply aloud
 ```
+
+With `--run`, the command is executed through `jarvis.tools.executor.execute` and the result is spoken. Overwriting a note asks for a spoken yes first.
+
+## Workspace
+
+Jarvis reads and writes only inside `workspace/`. Every path goes through `jarvis.tools.paths.safe_path`, which refuses `..`, absolute paths, `~`, hidden names and symlinks that lead outside. Details in `docs/phase5_results.md`.
 
 `jarvis.core.router.route()` turns a transcript into an `Intent` with plain pattern matching, or returns `None`. Every intent is checked against the fixed tool list in `jarvis.tools.registry`. Supported phrases are listed in `docs/phase4_results.md`.
 
@@ -67,7 +74,7 @@ Records 5 seconds at 16 kHz mono to `workspace/mic_test.wav`. The first run trig
 
 | Path | Contents | In git |
 | --- | --- | --- |
-| `src/jarvis/` | The package: `core/` (intent, router), `tools/` (registry), `speech/`, `config/` | yes |
+| `src/jarvis/` | The package: `core/` (intent, router, confirmation), `tools/` (registry, safe paths, file tools, executor), `speech/`, `config/` | yes |
 | `scripts/` | Manual hardware checks | yes |
 | `tests/` | pytest suite | yes |
 | `docs/` | Phase results and measurements | yes |

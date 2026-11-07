@@ -55,7 +55,9 @@ def route(transcript: str) -> Intent | None:
         match = pattern.match(text)
         if not match:
             continue
-        args = {k: v.strip(" \"'.,") for k, v in match.groupdict().items() if v is not None}
+        # Trailing punctuation only: stripping leading dots would turn ".env" into "env".
+        args = {k: v.strip(" \"'").rstrip(".,") for k, v in match.groupdict().items()
+                if v is not None}
         if tool == "fs.write_file":
             args.setdefault("body", "")
         try:
