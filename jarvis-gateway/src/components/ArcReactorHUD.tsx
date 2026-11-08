@@ -50,7 +50,7 @@ export const ArcReactorHUD: React.FC<ArcReactorHUDProps> = ({
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
         {/* Left: Arc Reactor Holographic Core */}
         <div className="flex items-center gap-6">
-          <div className="relative group cursor-pointer" onClick={toggleListening} title="Click to toggle voice listening">
+          <div className="relative group cursor-pointer" onClick={toggleListening} title="Jarvis listens through the Mac: say Jarvis, or hold right Option">
             {/* Outer concentric decorative ring */}
             <div
               className={`w-28 h-28 rounded-full border border-dashed flex items-center justify-center transition-all duration-700 ${
@@ -119,7 +119,7 @@ export const ArcReactorHUD: React.FC<ArcReactorHUDProps> = ({
                 </p>
               ) : isListening ? (
                 <p className="text-xs text-slate-400 italic">
-                  Listening... speak naturally (e.g. &ldquo;Jarvis, create folder Stark Projects&rdquo; or &ldquo;Take a screenshot&rdquo;)
+                  Listening... speak naturally (e.g. &ldquo;Jarvis, create a folder called Stark Projects&rdquo; or &ldquo;Jarvis, what&rsquo;s in my workspace?&rdquo;)
                 </p>
               ) : (
                 <p className="text-xs text-slate-500">
@@ -162,39 +162,39 @@ export const ArcReactorHUD: React.FC<ArcReactorHUDProps> = ({
               <Sparkles className="w-3 h-3 text-cyan-400" /> Try saying:
             </span>
             <button
-              onClick={() => onQuickCommand('create folder Mark85')}
+              onClick={() => onQuickCommand('create a folder called Mark85')}
               className="px-2 py-0.5 rounded bg-slate-900/90 hover:bg-cyan-950 hover:text-cyan-300 border border-slate-800 hover:border-cyan-500/40 transition-colors"
-              title="Click or say: 'Jarvis, create folder Mark85'"
+              title="Click, or say: Jarvis, create a folder called Mark85"
             >
               &ldquo;Create folder Mark85&rdquo;
             </button>
             <button
-              onClick={() => onQuickCommand("create file repulsor.py and write print('Power at 100%')")}
+              onClick={() => onQuickCommand('make a note called repulsor saying power at 100 percent')}
               className="px-2 py-0.5 rounded bg-slate-900/90 hover:bg-cyan-950 hover:text-cyan-300 border border-slate-800 hover:border-cyan-500/40 transition-colors"
-              title="Click or say: 'Create file repulsor.py and write print(Power at 100%)'"
+              title="Click, or say: Jarvis, make a note called repulsor saying power at 100 percent"
             >
-              &ldquo;Create file repulsor.py and write code&rdquo;
+              &ldquo;Note: repulsor at 100%&rdquo;
             </button>
             <button
-              onClick={() => onQuickCommand('take screenshot')}
+              onClick={() => onQuickCommand("what's in my workspace")}
               className="px-2 py-0.5 rounded bg-slate-900/90 hover:bg-cyan-950 hover:text-cyan-300 border border-slate-800 hover:border-cyan-500/40 transition-colors"
-              title="Click or say: 'Jarvis, take a screenshot'"
+              title="Click, or say: Jarvis, what's in my workspace"
             >
-              📸 &ldquo;Take a screenshot&rdquo;
+              &ldquo;What's in my workspace?&rdquo;
             </button>
             <button
-              onClick={() => onQuickCommand('take note: check arc reactor plasma containment')}
+              onClick={() => onQuickCommand('look up arc reactor and save me a note')}
               className="px-2 py-0.5 rounded bg-slate-900/90 hover:bg-cyan-950 hover:text-cyan-300 border border-slate-800 hover:border-cyan-500/40 transition-colors"
-              title="Click or say: 'Jarvis, take note: ...'"
+              title="Click, or say: Jarvis, look up arc reactor and save me a note"
             >
-              📝 &ldquo;Take note: ...&rdquo;
+              &ldquo;Research: arc reactor&rdquo;
             </button>
             <button
-              onClick={() => onQuickCommand('summarize video and capture key moments')}
+              onClick={() => onQuickCommand('make notes from this video')}
               className="px-2 py-0.5 rounded bg-slate-900/90 hover:bg-cyan-950 hover:text-cyan-300 border border-slate-800 hover:border-cyan-500/40 transition-colors"
-              title="Click or say: 'Jarvis, summarize this video'"
+              title="Click, or say: Jarvis, make notes from this video"
             >
-              🎬 &ldquo;Summarize this video&rdquo;
+              &ldquo;Notes from this video&rdquo;
             </button>
           </div>
         </div>

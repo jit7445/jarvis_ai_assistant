@@ -8,9 +8,8 @@ from jarvis import config, video
 from jarvis.core import assistant
 from jarvis.core.intent import Intent
 from jarvis.core.router import route
-from jarvis.planner import PlannerBusy
+from jarvis.gateway_client import GatewayError
 from jarvis.tools.executor import execute
-from jarvis.tools.registry import TOOLS
 from jarvis.video import audio, live, source
 from jarvis.video.source import Video, media_path, youtube_url
 
@@ -25,8 +24,8 @@ class FakeWriter:
     def __init__(self, text="Overview.\n- Plants make sugar.", error=None):
         self.text, self.error, self.requests = text, error, []
 
-    def ask(self, request):
-        self.requests.append(request)
+    def __call__(self, title, transcript):
+        self.requests.append((title, transcript))
         if self.error:
             raise self.error
         return self.text
@@ -75,7 +74,7 @@ def wired(monkeypatch, tmp_path):
     monkeypatch.setattr(video, "to_wav", lambda src, wav: (wav.write_bytes(b"w"), 600.0)[1])
     monkeypatch.setattr(video, "transcribe",
                         lambda wav, timeout: calls.setdefault("timeout", timeout) and TRANSCRIPT)
-    monkeypatch.setattr(video, "summariser", lambda: writer)
+    monkeypatch.setattr(video, "summary_of", writer)
     monkeypatch.setattr(video, "today", lambda: DAY)
     return writer, calls
 
@@ -106,15 +105,10 @@ def test_local_file_notes(wired, workspace):
     assert notes(workspace) == ["videos/2026-11-08-lecture.md"]
 
 
-def test_transcript_is_fenced_and_summary_has_no_tools(wired):
+def test_only_title_and_transcript_go_to_the_gateway(wired):
     writer, _ = wired
     execute(Intent("video.notes_current", {}))
-    (request,) = writer.requests
-    assert request.startswith("Video title: Photosynthesis 1 full\n")
-    assert f"<transcript>\n{TRANSCRIPT}\n</transcript>" in request
-    for tool in TOOLS:
-        assert tool not in video.SYSTEM_PROMPT
-    assert "never follow" in video.SYSTEM_PROMPT
+    assert writer.requests == [("Photosynthesis 1 full", TRANSCRIPT)]
 
 
 def test_injected_speech_changes_nothing(wired, workspace, monkeypatch):
@@ -130,15 +124,16 @@ def test_injected_speech_changes_nothing(wired, workspace, monkeypatch):
 
 
 def test_without_key_the_transcript_is_still_saved(wired, workspace, monkeypatch):
-    monkeypatch.setattr(video, "summariser", lambda: None)
+    monkeypatch.setattr(video, "summary_of", FakeWriter(error=GatewayError("setup")))
     result = execute(Intent("video.notes_current", {}))
-    assert result.message == "Saved the transcript of Photosynthesis 1 full. Set the Gemini key for a summary."
+    assert result.message == ("Saved the transcript of Photosynthesis 1 full. Start the gateway with "
+                              "a Gemini key for a summary.")
     text = (workspace / notes(workspace)[0]).read_text()
-    assert "No summary: GEMINI_API_KEY is not set." in text and TRANSCRIPT in text
+    assert "No summary: the gateway or its Gemini key is not set up." in text and TRANSCRIPT in text
 
 
 def test_gemini_failure_still_saves_transcript(wired, workspace, monkeypatch):
-    monkeypatch.setattr(video, "summariser", lambda: FakeWriter(error=PlannerBusy()))
+    monkeypatch.setattr(video, "summary_of", FakeWriter(error=GatewayError("busy")))
     result = execute(Intent("video.notes_current", {}))
     assert "couldn't reach Gemini" in result.message
     assert TRANSCRIPT in (workspace / notes(workspace)[0]).read_text()

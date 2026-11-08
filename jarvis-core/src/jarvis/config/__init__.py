@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 CORE_DIR = Path(__file__).resolve().parents[3]
@@ -35,28 +36,26 @@ ALLOWED_APPS = {
 BANNED_APPS = {"terminal", "iterm", "iterm2", "script editor", "keychain access", "system settings",
                "system preferences", "automator", "shortcuts", "console", "activity monitor"}
 
-# Used only when the router does not recognise a sentence and GEMINI_API_KEY is set.
-GEMINI_MODEL = "gemini-3.5-flash-lite"
-# The Gemini API rejects any deadline under 10 s with HTTP 400.
-PLANNER_TIMEOUT_SECONDS = 10.0
-# Earlier exchanges sent along with each new sentence, so "tell me more" works.
-CHAT_MEMORY_TURNS = 6
-CHAT_MEMORY_SECONDS = 300.0
+# Two local services (Phase 10). Core owns the Mac and makes no internet request; the gateway
+# owns the network (Gemini, Wikipedia, YouTube) and the browser UI. Both bind to 127.0.0.1 and
+# share a secret from the environment, created fresh by scripts/dev.sh.
+LOCALHOST = "127.0.0.1"
+CORE_PORT = int(os.environ.get("JARVIS_CORE_PORT", "8765"))
+GATEWAY_PORT = int(os.environ.get("JARVIS_GATEWAY_PORT", "4300"))
+TOKEN_ENV = "JARVIS_CORE_TOKEN"
+TOKEN_HEADER = "X-Jarvis-Token"
+MAX_UPLOAD_BYTES = 400 * 1024 * 1024
+# Waits for the gateway's answers. Gemini itself rejects deadlines under 10 s.
+PLANNER_TIMEOUT_SECONDS = 20.0
+SUMMARY_TIMEOUT_SECONDS = 120.0
+DOWNLOAD_TIMEOUT_SECONDS = 600.0
 
-# Research notes (Phase 8). Pages come only from this host; no URL from a page or a model is fetched.
-WIKI_API = "https://en.wikipedia.org/w/api.php"
-WIKI_PAGE_PREFIX = "https://en.wikipedia.org/wiki/"
-# Wikimedia returns 403 unless the agent carries a contact URL in this form (robot policy).
-USER_AGENT = "jarvis-core/0.1 (https://github.com/jit7445/jarvis_ai_assistant)"
+# Research notes are written here; the sources must be Wikipedia pages.
 RESEARCH_DIR = "research"
-RESEARCH_SOURCES = 2
-RESEARCH_PAGE_CHARS = 6000
-RESEARCH_TIMEOUT_SECONDS = 10.0
-# Summarising two pages takes longer than planning a command; the card shows progress meanwhile.
-SUMMARY_TIMEOUT_SECONDS = 30.0
+WIKI_PAGE_PREFIX = "https://en.wikipedia.org/wiki/"
 
 # Video notes. Video and audio files may be read anywhere in the home folder, read-only, by these
-# extensions only; the audio is transcribed on this Mac and only the text goes to Gemini.
+# extensions only; the audio is transcribed on this Mac and only the text goes to the gateway.
 VIDEO_DIR = "videos"
 MEDIA_SUFFIXES = (".mp4", ".mov", ".m4v", ".mkv", ".webm", ".avi", ".mp3", ".m4a", ".wav", ".aac")
 MAX_VIDEO_SECONDS = 90 * 60

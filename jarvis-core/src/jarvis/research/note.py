@@ -1,11 +1,17 @@
 import os
 import re
 from datetime import date
+from dataclasses import dataclass
 from pathlib import Path
 
 from jarvis import config
-from jarvis.research.wiki import Source
 from jarvis.tools.paths import safe_path
+
+
+@dataclass(frozen=True)
+class Source:
+    title: str
+    url: str
 
 
 def slug(topic: str) -> str:

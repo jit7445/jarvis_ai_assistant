@@ -3,14 +3,14 @@
     python scripts/plan_test.py I need a place to keep my recipes
     python scripts/plan_test.py --run I need a place to keep my recipes
 
-Needs GEMINI_API_KEY in the environment. Without --run nothing is executed.
+Needs the gateway running (scripts/dev.sh) and JARVIS_CORE_TOKEN in this shell. Without --run nothing is executed.
 """
 import argparse
 import sys
 import time
 
 from jarvis.core.proposal import chat_reply, to_intent
-from jarvis.planner import PlannerError, gemini
+from jarvis.planner import PlannerError, gateway
 from jarvis.tools.executor import execute
 from jarvis.tools.registry import InvalidIntent
 
@@ -20,9 +20,9 @@ def main() -> int:
     parser.add_argument("--run", action="store_true", help="execute the accepted intent")
     parser.add_argument("sentence", nargs="+")
     args = parser.parse_args()
-    planner = gemini.from_environment()
+    planner = gateway.from_environment()
     if planner is None:
-        print("GEMINI_API_KEY is not set.")
+        print("JARVIS_CORE_TOKEN is not set: start the services with scripts/dev.sh.")
         return 1
     sentence = " ".join(args.sentence)
     start = time.monotonic()

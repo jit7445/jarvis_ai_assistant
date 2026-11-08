@@ -11,7 +11,7 @@ from ApplicationServices import AXIsProcessTrustedWithOptions, kAXTrustedCheckOp
 from PyObjCTools import AppHelper
 from scipy.io.wavfile import read
 
-from jarvis import config
+from jarvis import config, gateway_client
 from jarvis.audio.listener import Listener
 from jarvis.audio.recorder import Recorder
 from jarvis.core import assistant
@@ -63,6 +63,7 @@ class Jarvis:
         self.verbose = verbose
         self.wake = wake
         self.planner = planner
+        self.api_on = False
         self.jobs: queue.Queue[tuple[str, object]] = queue.Queue()
         self.utterances: queue.Queue[np.ndarray] = queue.Queue()
         self.awaiting_command = threading.Event()
@@ -94,8 +95,14 @@ class Jarvis:
         else:
             self.jobs.put(("utterance", audio))
 
+    def _publish(self, state: State, text: str) -> None:
+        if self.api_on:
+            threading.Thread(target=gateway_client.post_event, args=(state.value, text),
+                             daemon=True).start()
+
     def _show(self, state: State, text: str) -> None:
         self.log(state.value, text)
+        self._publish(state, text)
         if state is State.FAILED:
             cue("error")
         AppHelper.callAfter(self.overlay.show, state, text)
@@ -183,6 +190,15 @@ class Jarvis:
                 if kind == "announce":
                     self._show(State.DONE if audio.ok else State.FAILED, audio.message)
                     self._speak(audio.message)
+                elif kind == "text":
+                    text, waiter = audio
+                    hooks = self._hooks()
+                    speak = hooks.speak
+                    hooks.speak = lambda message: (waiter.update(reply=message), speak(message))
+                    try:
+                        assistant.handle_text(text, hooks)
+                    finally:
+                        waiter["done"].set()
                 elif kind == "utterance":
                     shown = self._on_utterance(audio)
                 else:
@@ -195,7 +211,8 @@ class Jarvis:
                 pending = []
                 while not self.jobs.empty():
                     job = self.jobs.get_nowait()
-                    if job[0] == "announce":
+                    # Announcements and typed commands are owed an answer; overheard audio is not.
+                    if job[0] in ("announce", "text"):
                         pending.append(job)
                 for job in pending:
                     self.jobs.put(job)
@@ -207,6 +224,14 @@ class Jarvis:
                 self.listener.enabled = self.wake
                 if self.quit_when_done:
                     AppHelper.callLater(2.5, AppHelper.stopEventLoop)
+
+    def run_text(self, text: str, timeout: float = 600.0) -> str:
+        """A typed command from the browser, through the same queue and pipeline as speech."""
+        waiter = {"done": threading.Event(), "reply": ""}
+        self.jobs.put(("text", (text, waiter)))
+        if not waiter["done"].wait(timeout):
+            return "Jarvis is still busy with that."
+        return waiter["reply"] or "Done."
 
     def process(self, audio: np.ndarray) -> None:
         self.busy = True
@@ -277,10 +302,8 @@ def main() -> None:
                         help="never ask Gemini, even when GEMINI_API_KEY is set")
     args = parser.parse_args()
 
-    planner = None
-    if not args.offline:
-        from jarvis.planner import gemini
-        planner = gemini.from_environment()
+    from jarvis.planner import gateway
+    planner = None if args.offline else gateway.from_environment()
 
     config.WORKSPACE.mkdir(exist_ok=True)
     from jarvis.speech.server import WhisperServer
@@ -291,11 +314,19 @@ def main() -> None:
     one_shot = bool(args.once or args.wav)
     jarvis = Jarvis(mute=args.mute, quit_when_done=one_shot, verbose=args.verbose,
                     wake=not (args.no_wake or one_shot), planner=planner)
-    if planner is not None:
-        print(f"Gemini fallback on ({planner.model}); only unrecognised sentences are sent.",
+    secret = gateway_client.token()
+    if secret:
+        from jarvis import api
+        api.serve(api.create_app(secret, config.CORE_PORT, jarvis.run_text), config.CORE_PORT)
+        jarvis.api_on = True
+        print(f"Core API on http://{config.LOCALHOST}:{config.CORE_PORT} (token required).",
               flush=True)
-    elif not args.offline:
-        print("Gemini fallback off: GEMINI_API_KEY is not set.", flush=True)
+    else:
+        print(f"Core API off and no Gemini: {config.TOKEN_ENV} is not set. Start both services "
+              "with scripts/dev.sh.", flush=True)
+    if planner is not None:
+        print("Gemini fallback on, through the gateway; only unrecognised sentences are sent.",
+              flush=True)
 
     if args.wav:
         _, audio = read(args.wav)

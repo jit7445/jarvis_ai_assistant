@@ -20,29 +20,28 @@ def ffmpeg() -> str | None:
     return next((p for p in config.FFMPEG_CANDIDATES if Path(p).is_file()), None)
 
 
+_SUFFIX = {"audio/mp4": ".m4a", "audio/webm": ".webm", "audio/mpeg": ".mp3", "audio/ogg": ".ogg"}
+
+
 def download_youtube(url: str, folder: Path) -> tuple[Path, str]:
-    """The audio track of a canonical YouTube URL, and the video's title."""
-    import yt_dlp
-    options = {
-        "format": "bestaudio[ext=m4a]/bestaudio", "outtmpl": str(folder / "audio.%(ext)s"),
-        "quiet": True, "no_warnings": True, "noprogress": True, "noplaylist": True,
-        "socket_timeout": 20, "max_filesize": 300 * 1024 * 1024,
-    }
+    """The audio track of a canonical YouTube URL, fetched by the gateway, and the title."""
+    from urllib.parse import unquote
+
+    from jarvis import gateway_client
     try:
-        with yt_dlp.YoutubeDL(options) as ydl:
-            info = ydl.extract_info(url, download=False)
-            if info.get("is_live"):
-                raise AudioUnavailable("live stream")
-            if (info.get("duration") or 0) > config.MAX_VIDEO_SECONDS:
-                raise TooLong(info["duration"])
-            ydl.process_ie_result(info, download=True)
-    except yt_dlp.utils.YoutubeDLError:
-        raise AudioUnavailable("download failed") from None
-    files = sorted(folder.glob("audio.*"))
-    if not files:
-        raise AudioUnavailable("no audio")
-    title = info.get("title") if isinstance(info.get("title"), str) else "YouTube video"
-    return files[0], title
+        response = gateway_client.post("/youtube-audio", config.DOWNLOAD_TIMEOUT_SECONDS,
+                                       json={"url": url})
+    except gateway_client.GatewayError as error:
+        if error.kind == "toolong":
+            raise TooLong(config.MAX_VIDEO_SECONDS + 1) from None
+        raise AudioUnavailable(error.kind) from None
+    kind = response.headers.get("content-type", "").split(";")[0].strip()
+    if kind not in _SUFFIX or not response.content or len(response.content) > config.MAX_UPLOAD_BYTES:
+        raise AudioUnavailable("unexpected reply")
+    path = folder / f"audio{_SUFFIX[kind]}"
+    path.write_bytes(response.content)
+    title = unquote(response.headers.get("x-title", ""))[:200] or "YouTube video"
+    return path, title
 
 
 def to_wav(source: Path, wav: Path) -> float:

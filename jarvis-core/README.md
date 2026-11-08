@@ -28,6 +28,8 @@ jarvis --offline     # never ask Gemini, even with a key set
 
 **Stopping by voice.** "Close Jarvis", "stop Jarvis", "quit Jarvis", "goodbye Jarvis" or "Jarvis, stop" makes Jarvis say goodbye and exit, like Ctrl+C. Overheard speech must include the name, and the whole sentence must be the request, so "stop the music" or "we should stop Jarvis from..." do nothing. After the wake word or with the hotkey, a bare "stop" or "close" is enough.
 
+Whisper stays loaded in a local `whisper-server` (127.0.0.1 only), so a command transcribes in about 0.2 s; replies start well under a second after you stop speaking. "Delete X" and "delete everything" move items to the Trash after a spoken yes.
+
 A compact HUD card appears at the bottom of the screen: a reactor of counter-rotating cyan rings whose glow follows your voice and whose colour shows the state, the transcript before anything runs, then the reply. The card stays on screen while Jarvis runs, resting on "Say Jarvis to talk" between commands; drag it anywhere, and its X button closes Jarvis like "close Jarvis" does. Chimes mark start, stop and errors. Overwrites ask for a spoken yes.
 
 The hotkey needs Accessibility permission for the app you launch Jarvis from (System Settings > Privacy & Security > Accessibility), and that app must be restarted after granting it. Pressing any other key while holding Option cancels the recording, so typing Option shortcuts never triggers Jarvis.
@@ -66,15 +68,20 @@ python scripts/route_test.py --run                              # speak, then ac
 
 With `--run`, the command is executed through `jarvis.tools.executor.execute` and the result is spoken. Overwriting a note asks for a spoken yes first.
 
+## Services
+
+Jarvis core serves a small API on `127.0.0.1:8765` (FastAPI) for `jarvis-gateway`: `/health`, `/tools`, `/transcribe`, `/execute` (after the policy gate, never confirming) and `/command`. Every request needs the shared secret from `JARVIS_CORE_TOKEN` and a localhost `Host`. Without the secret the API stays off and Jarvis works offline. Details in `docs/phase10_results.md`.
+
 ## Gemini fallback
 
-When the router does not recognise a sentence, Jarvis can ask Gemini to map it onto one of the same tools. It is off until you set a key from aistudio.google.com/apikey in your shell profile (`~/.zshrc`), never in the repo:
+When the router does not recognise a sentence, Jarvis asks Gemini to map it onto one of the same tools. Gemini runs in `jarvis-gateway`, not here: core makes no internet request and never sees the key. Put a key from aistudio.google.com/apikey in your shell profile (`~/.zshrc`), never in the repo, and start both services from the repository root:
 
 ```bash
-export GEMINI_API_KEY="..."
-python scripts/plan_test.py I need a place to keep my recipes        # shows the proposal, runs nothing
-python scripts/plan_test.py --run I need a place to keep my recipes  # runs it if accepted
+export GEMINI_API_KEY="..."            # in ~/.zshrc
+../scripts/dev.sh --verbose            # gateway + Jarvis, with a fresh shared secret
 ```
+
+`scripts/plan_test.py` shows a proposal without running it; it needs `JARVIS_CORE_TOKEN` from a running `dev.sh` session.
 
 It also chats: questions and small talk get a short spoken answer ("how are you", "tell me a joke", "explain it"), with the last 6 exchanges remembered for 5 minutes. A chat reply is only ever spoken, never acted on.
 

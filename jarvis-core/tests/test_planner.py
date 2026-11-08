@@ -5,14 +5,13 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
-from google.genai import errors
 
-from jarvis import config
+from jarvis import config, gateway_client
 from jarvis.core import assistant
 from jarvis.core.proposal import MAX_REPLY_CHARS, chat_reply, to_intent
 from jarvis.planner import (PlannerBadReply, PlannerBusy, PlannerError, PlannerSetup,
                             PlannerUnavailable)
-from jarvis.planner.gemini import GeminiPlanner
+from jarvis.planner.gateway import GatewayPlanner
 from jarvis.planner.prompt import ABOUT, system_prompt
 from jarvis.tools import apps
 from jarvis.tools.registry import TOOLS, InvalidIntent
@@ -24,18 +23,6 @@ from test_assistant import SPEECH, Fake, workspace  # noqa: F401  (autouse temp 
 def no_launch(monkeypatch):
     monkeypatch.setattr(apps.subprocess, "run",
                         lambda argv, **kw: subprocess.CompletedProcess(argv, 0))
-
-
-class FakeClient:
-    def __init__(self, text=None, error=None):
-        self.text, self.error, self.calls = text, error, []
-        self.models = self
-
-    def generate_content(self, **kwargs):
-        self.calls.append(kwargs)
-        if self.error:
-            raise self.error
-        return SimpleNamespace(text=self.text)
 
 
 class FakePlanner:
@@ -60,6 +47,7 @@ def ask(heard, planner):
 # The prompt and the request
 
 def test_prompt_covers_every_tool_and_nothing_private():
+    """Core serves this prompt to the gateway through GET /tools."""
     prompt = system_prompt()
     assert set(ABOUT) == set(TOOLS)
     for tool in TOOLS:
@@ -68,46 +56,6 @@ def test_prompt_covers_every_tool_and_nothing_private():
         assert app in prompt
     for secret in [str(config.WORKSPACE), str(Path.home()), getpass.getuser(), "GEMINI_API_KEY"]:
         assert secret not in prompt
-
-
-def test_request_carries_only_the_transcript():
-    client = FakeClient('{"tool": null}')
-    GeminiPlanner("key", client=client).propose("make me a shopping list")
-    (call,) = client.calls
-    assert [(c.role, c.parts[0].text) for c in call["contents"]] == [
-        ("user", "make me a shopping list")]
-    assert call["model"] == config.GEMINI_MODEL
-    assert call["config"].system_instruction == system_prompt()
-    assert call["config"].response_mime_type == "application/json"
-
-
-@pytest.mark.parametrize("error, expected", [
-    (errors.ClientError(429, {"error": {"message": "quota"}}), PlannerBusy),
-    (errors.ClientError(403, {"error": {"message": "denied"}}), PlannerSetup),
-    (errors.ClientError(400, {"error": {"message": "API key not valid"}}), PlannerSetup),
-    (errors.ClientError(404, {"error": {"message": "no model"}}), PlannerUnavailable),
-    (errors.ServerError(503, {"error": {"message": "overloaded"}}), PlannerUnavailable),
-    (httpx.ConnectError("offline"), PlannerUnavailable),
-    (httpx.ReadTimeout("slow"), PlannerUnavailable),
-    (OSError("no route to host"), PlannerUnavailable),
-])
-def test_failures_map_to_planner_errors(error, expected):
-    with pytest.raises(expected):
-        GeminiPlanner("key", client=FakeClient(error=error)).propose("anything")
-
-
-@pytest.mark.parametrize("text", ["not json", "", None, "{'tool': 'x'}"])
-def test_non_json_reply_is_bad(text):
-    with pytest.raises(PlannerBadReply):
-        GeminiPlanner("key", client=FakeClient(text)).propose("anything")
-
-
-def test_no_key_means_no_planner(monkeypatch):
-    from jarvis.planner import gemini
-    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
-    assert gemini.from_environment() is None
-    monkeypatch.setenv("GEMINI_API_KEY", "  ")
-    assert gemini.from_environment() is None
 
 
 # Distrusting the reply
@@ -249,16 +197,6 @@ def test_known_commands_work_offline_and_never_ask_gemini(heard, spoken, workspa
 
 # Casual chat
 
-class ScriptedClient(FakeClient):
-    def __init__(self, replies):
-        super().__init__()
-        self.replies = list(replies)
-
-    def generate_content(self, **kwargs):
-        self.calls.append(kwargs)
-        return SimpleNamespace(text=self.replies.pop(0))
-
-
 def test_chat_reply_is_spoken_and_nothing_runs(workspace):
     fake = ask(" How are you today?", FakePlanner({"tool": None, "reply": "I'm doing well, thanks!"}))
     assert fake.spoken == ["I'm doing well, thanks!"]
@@ -299,38 +237,87 @@ def test_no_chat_reply(proposal):
     assert chat_reply(proposal) is None
 
 
-def test_memory_carries_recent_turns_and_expires(monkeypatch):
-    clock = [1000.0]
-    monkeypatch.setattr("jarvis.planner.gemini.time.monotonic", lambda: clock[0])
-    client = ScriptedClient(['{"tool": null, "reply": "A joke."}',
-                             '{"tool": null, "reply": "Another."}',
-                             '{"tool": null, "reply": "Fresh start."}'])
-    planner = GeminiPlanner("key", client=client)
-    planner.propose("tell me a joke")
-    clock[0] += 30
-    planner.propose("tell me another")
-    second = [(c.role, c.parts[0].text) for c in client.calls[1]["contents"]]
-    assert second == [("user", "tell me a joke"), ("model", '{"tool": null, "reply": "A joke."}'),
-                      ("user", "tell me another")]
-    clock[0] += config.CHAT_MEMORY_SECONDS + 1
-    planner.propose("hello")
-    assert [c.parts[0].text for c in client.calls[2]["contents"]] == ["hello"]
+# The planner is now a localhost call to the gateway
+
+class Reply:
+    def __init__(self, status, body=None):
+        self.status_code, self._body = status, body
+
+    def json(self):
+        if isinstance(self._body, Exception):
+            raise self._body
+        return self._body
 
 
-def test_memory_keeps_only_the_last_turns(monkeypatch):
-    client = ScriptedClient(['{"tool": null, "reply": "ok"}'] * 20)
-    planner = GeminiPlanner("key", client=client)
-    for i in range(20):
-        planner.propose(f"message {i}")
-    last = client.calls[-1]["contents"]
-    assert len(last) == 2 * config.CHAT_MEMORY_TURNS + 1
-    assert last[0].parts[0].text == f"message {20 - 1 - config.CHAT_MEMORY_TURNS}"
+@pytest.fixture
+def gateway(monkeypatch):
+    sent = []
+    monkeypatch.setenv(config.TOKEN_ENV, "secret")
+
+    def answer(status, body=None):
+        def post(url, json, timeout, follow_redirects, headers):
+            sent.append((url, json, headers))
+            return Reply(status, body)
+        monkeypatch.setattr(gateway_client.httpx, "post", post)
+    return sent, answer
 
 
-def test_failed_request_is_not_remembered():
-    client = ScriptedClient(["not json", '{"tool": null, "reply": "hi"}'])
-    planner = GeminiPlanner("key", client=client)
+def test_planner_posts_only_the_text_with_the_token(gateway):
+    sent, answer = gateway
+    answer(200, {"proposal": {"tool": "fs.list_dir"}})
+    assert GatewayPlanner().propose("what have I got") == {"tool": "fs.list_dir"}
+    url, body, headers = sent[0]
+    assert url == f"http://127.0.0.1:{config.GATEWAY_PORT}/plan"
+    assert body == {"text": "what have I got"} and headers == {config.TOKEN_HEADER: "secret"}
+
+
+@pytest.mark.parametrize("status, error", [(429, PlannerBusy), (401, PlannerSetup), (503, PlannerSetup),
+                                           (500, PlannerUnavailable), (502, PlannerUnavailable)])
+def test_gateway_statuses(status, error, gateway):
+    gateway[1](status)
+    with pytest.raises(error):
+        GatewayPlanner().propose("x")
+
+
+@pytest.mark.parametrize("body", [ValueError("not json"), {"nope": 1}, ["x"]])
+def test_garbled_gateway_reply(body, gateway):
+    gateway[1](200, body)
     with pytest.raises(PlannerBadReply):
-        planner.propose("first")
-    planner.propose("second")
-    assert [c.parts[0].text for c in client.calls[1]["contents"]] == ["second"]
+        GatewayPlanner().propose("x")
+
+
+def test_gateway_down(monkeypatch):
+    monkeypatch.setenv(config.TOKEN_ENV, "secret")
+    monkeypatch.setattr(gateway_client.httpx, "post",
+                        lambda *a, **k: (_ for _ in ()).throw(httpx.ConnectError("refused")))
+    with pytest.raises(PlannerUnavailable):
+        GatewayPlanner().propose("x")
+
+
+def test_no_token_means_no_planner(monkeypatch):
+    from jarvis.planner import gateway
+    monkeypatch.delenv(config.TOKEN_ENV, raising=False)
+    assert gateway.from_environment() is None
+
+
+def test_core_only_talks_to_localhost(monkeypatch):
+    monkeypatch.setenv(config.TOKEN_ENV, "secret")
+    monkeypatch.setattr(gateway_client, "base_url", lambda: "https://evil.example.com")
+    monkeypatch.setattr(gateway_client.httpx, "post", lambda *a, **k: pytest.fail("network used"))
+    with pytest.raises(gateway_client.GatewayError):
+        gateway_client.post("/plan", 1, json={})
+
+
+def test_core_has_no_internet_libraries():
+    """The strict split: Gemini, Wikipedia and YouTube code live only in the gateway."""
+    import ast
+    banned = {"google", "yt_dlp", "requests", "urllib.request"}
+    for path in Path("src/jarvis").rglob("*.py"):
+        tree = ast.parse(path.read_text())
+        for node in ast.walk(tree):
+            names = [a.name for a in node.names] if isinstance(node, ast.Import) else \
+                [node.module or ""] if isinstance(node, ast.ImportFrom) else []
+            for name in names:
+                assert name.split(".")[0] not in banned and name not in banned, f"{path}: {name}"
+    users = {p.name for p in Path("src/jarvis").rglob("*.py") if "import httpx" in p.read_text()}
+    assert users <= {"gateway_client.py", "server.py"}, users
