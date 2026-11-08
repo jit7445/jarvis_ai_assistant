@@ -27,7 +27,8 @@ Built phase by phase from the Jarvis V1 plan.
 | 5 | Workspace file tools | done |
 | 6 | App launcher (allowlist only) | done |
 | 7 | Gemini fallback (validated JSON proposals) | done |
-| 8-10 | Web research through two-service split | not started |
+| 8 | Web research notes (Wikipedia, sourced) | done |
+| 9-10 | Integrated prototype, two-service split | not started |
 | 11 | Overlay (Siri-style card, sound cues, push-to-talk) | done early |
 | 12 | Wake word (whisper-based) and stop by voice | done early, false-activation count pending |
 

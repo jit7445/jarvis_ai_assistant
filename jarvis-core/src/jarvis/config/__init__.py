@@ -38,3 +38,15 @@ PLANNER_TIMEOUT_SECONDS = 10.0
 # Earlier exchanges sent along with each new sentence, so "tell me more" works.
 CHAT_MEMORY_TURNS = 6
 CHAT_MEMORY_SECONDS = 300.0
+
+# Research notes (Phase 8). Pages come only from this host; no URL from a page or a model is fetched.
+WIKI_API = "https://en.wikipedia.org/w/api.php"
+WIKI_PAGE_PREFIX = "https://en.wikipedia.org/wiki/"
+# Wikimedia returns 403 unless the agent carries a contact URL in this form (robot policy).
+USER_AGENT = "jarvis-core/0.1 (https://github.com/jit7445/jarvis_ai_assistant)"
+RESEARCH_DIR = "research"
+RESEARCH_SOURCES = 2
+RESEARCH_PAGE_CHARS = 6000
+RESEARCH_TIMEOUT_SECONDS = 10.0
+# Summarising two pages takes longer than planning a command; the card shows progress meanwhile.
+SUMMARY_TIMEOUT_SECONDS = 30.0

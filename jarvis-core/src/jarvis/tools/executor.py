@@ -4,6 +4,7 @@ from typing import Any
 
 from jarvis.core.intent import Intent
 from jarvis.core.result import Result
+from jarvis import research
 from jarvis.tools import apps, fs
 from jarvis.tools.registry import InvalidIntent, check
 
@@ -23,6 +24,7 @@ _HANDLERS: dict[str, Callable[[dict[str, Any], bool], Result]] = {
     "fs.read_file": lambda a, _: fs.read_file(a["name"]),
     "fs.list_dir": lambda a, _: fs.list_dir(),
     "app.open": _open_app,
+    "web.research": lambda a, _: research.run(a["topic"]),
 }
 
 

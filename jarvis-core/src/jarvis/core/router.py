@@ -52,6 +52,13 @@ _PATTERNS: list[tuple[re.Pattern[str], str]] = [
      r"|^what does (?:the |my )?(?:note )?(?:called |named )?(?P<name2>.+?)(?: note)? say$"
      r"|^(?:show|open) (?:me )?(?:the |my )?note (?:called |named )?(?P<name3>.+)$",
      "fs.read_file"),
+    # research
+    (r"^(?:look up|research|find out about|find out|read up on|look into|search for"
+     r"|search (?:the web|online|wikipedia) for|google)"
+     r" (?P<topic>.+?)(?:,? and (?:save|make|write|take|put|give)(?: me)? (?:it in |it as )?"
+     r"(?:a |an )?(?:research )?(?:note|it)(?: (?:on|about) it)?)?$", "web.research"),
+    (r"^(?:make|write|save|give|create)(?: me)? (?:a |an )?research note (?:on|about|for) "
+     r"(?P<topic>.+)$", "web.research"),
     # apps
     (r"^(?:open|launch|start|run|fire up|bring up|switch to|load) (?:up )?"
      r"(?!(?:the |my )?(?:app|it|that|this|application)$)(?:the |my )?(?P<app_name>.+?)"

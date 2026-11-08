@@ -6,6 +6,7 @@ TOOLS: dict[str, dict[str, type]] = {
     "fs.read_file": {"name": str},
     "fs.list_dir": {},
     "app.open": {"app_name": str},
+    "web.research": {"topic": str},
 }
 
 

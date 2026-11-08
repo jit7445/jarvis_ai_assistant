@@ -80,6 +80,10 @@ It also chats: questions and small talk get a short spoken answer ("how are you"
 
 Only the sentence, recent exchanges and the tool list are sent. The reply is checked like any untrusted input: known tool, exact arguments, `safe_path` on names, allowlist for apps, spoken yes for overwrites. No network, a rate limit or a bad reply each get a spoken answer and change nothing. On the free tier Google may use requests to improve its products. Details in `docs/phase7_results.md`.
 
+## Research notes
+
+"Look up black holes and save me a note", "research the Roman Empire" or "find out about whisper.cpp" fetches up to two Wikipedia articles, has Gemini summarise them in a separate call with no tools, and saves `workspace/research/YYYY-MM-DD-topic.md` with the sources and the date they were fetched. Page text is treated as data: it is never sent to the planner and never acted on. Needs `GEMINI_API_KEY`. Details in `docs/phase8_results.md`.
+
 ## Opening apps
 
 "Open Safari" opens only apps listed in `ALLOWED_APPS` in `src/jarvis/config/__init__.py` (Safari, Notes, Music, Calendar and Chrome). Any other name is refused aloud and never reaches `open`. Terminal, iTerm, Script Editor, Keychain Access, System Settings and a few others sit in `BANNED_APPS` and stay refused even if added to the allowlist. To add an app, add a line such as `"slack": "Slack",` with the spoken name in lowercase. Details in `docs/phase6_results.md`.
@@ -110,7 +114,7 @@ Records 5 seconds at 16 kHz mono to `workspace/mic_test.wav`. The first run trig
 
 | Path | Contents | In git |
 | --- | --- | --- |
-| `src/jarvis/` | The package: `app.py` (entry point), `core/` (intent, router, confirmation, assistant pipeline), `tools/` (registry, safe paths, file tools, app launcher, executor), `speech/` (whisper, say), `audio/` (recorder), `ui/` (overlay), `planner/` (Gemini fallback), `config/` | yes |
+| `src/jarvis/` | The package: `app.py` (entry point), `core/` (intent, router, confirmation, assistant pipeline), `tools/` (registry, safe paths, file tools, app launcher, executor), `speech/` (whisper, say), `audio/` (recorder), `ui/` (overlay), `planner/` (Gemini fallback), `research/` (Wikipedia notes), `config/` | yes |
 | `scripts/` | Manual hardware checks | yes |
 | `tests/` | pytest suite | yes |
 | `docs/` | Phase results and measurements | yes |

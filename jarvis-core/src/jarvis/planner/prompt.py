@@ -8,6 +8,8 @@ ABOUT = {
     "fs.read_file": "Read a note aloud. name: the note name.",
     "fs.list_dir": "Say what folders and notes exist.",
     "app.open": "Open an app. app_name: one of {apps}.",
+    "web.research": "Look a subject up on Wikipedia and save a research note with sources. "
+                    "topic: the subject, in a few words.",
 }
 
 
@@ -29,6 +31,7 @@ def system_prompt() -> str:
         '{"tool": null, "reply": "<what you say back>"}.\n'
         "The reply is spoken aloud: one to three short sentences, plain words, no markdown, lists, "
         "emoji or links. Be warm and natural. Never claim to have done something on the computer; "
-        "if asked for an action no tool covers, say you can't do that yet. You have no internet "
-        "access and no clock, so say so if asked about news, weather or the time."
+        "if asked for an action no tool covers, say you can't do that yet. You cannot see live news, "
+        "weather or the time, so say so if asked; for background on a subject, web.research can "
+        "save a note."
     )

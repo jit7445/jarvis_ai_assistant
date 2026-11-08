@@ -112,6 +112,8 @@ def _act(text: str, hooks: Hooks) -> None:
         return
     # Leave the transcript on screen long enough to spot a mishearing before anything runs.
     time.sleep(hooks.preview_seconds)
+    if intent.tool == "web.research":
+        hooks.show(State.THINKING, f"Looking up {intent.args['topic']}\u2026")
 
     result = execute(intent)
     if not result.needs_confirmation:
