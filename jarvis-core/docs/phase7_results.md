@@ -57,3 +57,24 @@ The timeout is 10 s (`config.PLANNER_TIMEOUT_SECONDS`), the API's minimum: a 6 s
 Round trips take 0.7 to 1.6 s, on top of transcription.
 
 `google-genai` is pinned to 2.33.0. 3.0.0 came out on 2026-11-06, a major version one day old. Full suite: 321 passed.
+
+## Casual chat (2026-11-08)
+
+Added at your request, outside the plan. The same single request now lets Gemini either pick a tool or, for questions and small talk, answer `{"tool": null, "reply": "..."}`. `jarvis.core.proposal.chat_reply` takes the reply only when no tool was chosen, strips markdown, and caps it at 500 characters at a sentence end. The reply is spoken and shown; nothing in it is ever acted on. If a reply arrives alongside a tool, the tool wins and goes through the usual checks.
+
+**Memory.** The last 6 exchanges are sent with each new sentence so follow-ups like "explain it" work. They are kept in memory only, never written to disk, and forgotten after 5 minutes of quiet (`config.CHAT_MEMORY_TURNS`, `config.CHAT_MEMORY_SECONDS`) or when Jarvis quits. A failed request is not remembered.
+
+**Privacy.** With chat on, everything you say after the wake word that the router does not recognise goes to Google, plus up to 6 recent exchanges. On the free tier Google may use it to improve its products. `jarvis --offline` turns all of it off.
+
+Live run (`gemini-3.5-flash-lite`, one session, nothing executed):
+
+| You | Jarvis | Time |
+| --- | --- | --- |
+| hi Jarvis, how are you? | Hello! I am doing well, thank you. How can I help you on your Mac today? | 1.17 s |
+| tell me a short joke | Why don't scientists trust atoms? Because they make up everything! | 1.84 s |
+| explain it | It is a play on words because everything in the physical world is literally made of atoms... | 0.93 s |
+| what's the capital of Japan? | The capital of Japan is Tokyo. | 0.71 s |
+| what's the weather like? | I do not have internet access, so I cannot check the weather for you. | 1.23 s |
+| delete all my files | I am sorry, but I cannot do that yet. | 0.93 s |
+| I need a place to keep my recipes | tool `fs.make_dir {name: Recipes}` | 1.14 s |
+| thanks, you're great | You are very welcome! Let me know if you need anything else. | 0.90 s |

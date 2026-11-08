@@ -9,7 +9,7 @@ import argparse
 import sys
 import time
 
-from jarvis.core.proposal import to_intent
+from jarvis.core.proposal import chat_reply, to_intent
 from jarvis.planner import PlannerError, gemini
 from jarvis.tools.executor import execute
 from jarvis.tools.registry import InvalidIntent
@@ -38,7 +38,8 @@ def main() -> int:
         print(f"refused: {type(error).__name__}")
         return 1
     if intent is None:
-        print("no tool fits")
+        reply = chat_reply(proposal)
+        print(f"chat reply: {reply}" if reply else "no tool fits")
         return 0
     print(f"accepted: {intent.tool} {intent.args}")
     if args.run:

@@ -76,7 +76,9 @@ python scripts/plan_test.py I need a place to keep my recipes        # shows the
 python scripts/plan_test.py --run I need a place to keep my recipes  # runs it if accepted
 ```
 
-Only the sentence and the tool list are sent. The reply is checked like any untrusted input: known tool, exact arguments, `safe_path` on names, allowlist for apps, spoken yes for overwrites. No network, a rate limit or a bad reply each get a spoken answer and change nothing. On the free tier Google may use requests to improve its products. Details in `docs/phase7_results.md`.
+It also chats: questions and small talk get a short spoken answer ("how are you", "tell me a joke", "explain it"), with the last 6 exchanges remembered for 5 minutes. A chat reply is only ever spoken, never acted on.
+
+Only the sentence, recent exchanges and the tool list are sent. The reply is checked like any untrusted input: known tool, exact arguments, `safe_path` on names, allowlist for apps, spoken yes for overwrites. No network, a rate limit or a bad reply each get a spoken answer and change nothing. On the free tier Google may use requests to improve its products. Details in `docs/phase7_results.md`.
 
 ## Opening apps
 

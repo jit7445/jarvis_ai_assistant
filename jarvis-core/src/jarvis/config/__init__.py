@@ -35,3 +35,6 @@ BANNED_APPS = {"terminal", "iterm", "iterm2", "script editor", "keychain access"
 GEMINI_MODEL = "gemini-3.5-flash-lite"
 # The Gemini API rejects any deadline under 10 s with HTTP 400.
 PLANNER_TIMEOUT_SECONDS = 10.0
+# Earlier exchanges sent along with each new sentence, so "tell me more" works.
+CHAT_MEMORY_TURNS = 6
+CHAT_MEMORY_SECONDS = 300.0

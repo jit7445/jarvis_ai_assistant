@@ -7,7 +7,7 @@ import numpy as np
 
 from jarvis.core.confirm import parse_answer
 from jarvis.core.intent import Intent
-from jarvis.core.proposal import to_intent
+from jarvis.core.proposal import chat_reply, to_intent
 from jarvis.core.router import route
 from jarvis.core.wake import is_stop
 from jarvis.planner import Planner, PlannerBusy, PlannerError, PlannerSetup
@@ -93,7 +93,11 @@ def _ask_planner(text: str, hooks: Hooks) -> Intent | None:
         _reply(hooks, State.FAILED, "Gemini suggested something I can't do, so I did nothing.")
         return None
     if intent is None:
-        _reply(hooks, State.FAILED, "Sorry, I didn't catch that.")
+        reply = chat_reply(proposal)
+        if reply:
+            _reply(hooks, State.DONE, reply)
+        else:
+            _reply(hooks, State.FAILED, "Sorry, I didn't catch that.")
     return intent
 
 
