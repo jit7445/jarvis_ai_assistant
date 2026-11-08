@@ -5,6 +5,8 @@ TOOLS: dict[str, dict[str, type]] = {
     "fs.write_file": {"name": str, "body": str},
     "fs.read_file": {"name": str},
     "fs.list_dir": {},
+    "fs.delete": {"name": str},
+    "fs.delete_all": {},
     "app.open": {"app_name": str},
     "web.research": {"topic": str},
     "video.notes_current": {},

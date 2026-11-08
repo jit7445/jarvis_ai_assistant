@@ -7,6 +7,7 @@ from jarvis import config
 from jarvis.core.confirm import parse_answer
 from jarvis.core.intent import Intent
 from jarvis.core.router import route
+from jarvis.tools import fs
 from jarvis.tools.executor import execute
 
 
@@ -182,3 +183,30 @@ def test_missing_workspace(workspace, monkeypatch):
 ])
 def test_parse_answer(spoken, answer):
     assert parse_answer(spoken) is answer
+
+
+
+@pytest.mark.parametrize("asked, stored", [
+    ("grocery", "groceries.md"), ("groceries", "grocery.md"), ("Groceries", "groceries.md"),
+    ("ideas", "Ideas.txt"), ("shoping list", "shopping list.md"),
+])
+def test_read_finds_what_was_meant(asked, stored, workspace):
+    (workspace / stored).write_text("milk\n")
+    assert fs.read_file(asked).message == "milk"
+
+
+@pytest.mark.parametrize("asked", ["bread", "grocer y list of things", "../groceries"])
+def test_read_does_not_guess_wildly_or_escape(asked, workspace):
+    (workspace / "groceries.md").write_text("milk\n")
+    result = fs.read_file(asked) if not asked.startswith("..") else None
+    if result is not None:
+        assert not result.ok
+    else:
+        with pytest.raises(PermissionError):
+            fs.read_file(asked)
+
+
+def test_delete_names_the_real_item(workspace):
+    (workspace / "Offline").mkdir()
+    # APFS ignores case, so "offline" already is the Offline folder.
+    assert fs.delete("offline").message.lower() == "move the folder offline to the trash?"

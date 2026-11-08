@@ -6,6 +6,9 @@ WORKSPACE = CORE_DIR / "workspace"
 VOICE = "Samantha"
 
 WHISPER_CLI = CORE_DIR / "whisper.cpp" / "build" / "bin" / "whisper-cli"
+# Kept running with the model loaded, so a command does not pay the load cost each time.
+WHISPER_SERVER = CORE_DIR / "whisper.cpp" / "build" / "bin" / "whisper-server"
+WHISPER_SERVER_START_SECONDS = 60.0
 WHISPER_MODEL = CORE_DIR / "whisper.cpp" / "models" / "ggml-base.en.bin"
 SAMPLE_RATE = 16000
 # Without this, base.en splits "Jarvis, create" into "Jarv is created". Names in it are deliberately

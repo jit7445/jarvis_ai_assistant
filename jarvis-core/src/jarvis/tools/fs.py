@@ -17,6 +17,35 @@ def _note_path(name: str) -> Path:
     return safe_path(name)
 
 
+def _closest(name: str, notes_only: bool) -> Path | None:
+    """A workspace item whose name is what was meant: whisper hears "grocery" for groceries,
+    "offline" for Offline. Same folder only; never follows anything outside safe_path."""
+    from difflib import SequenceMatcher
+    wanted = safe_path(name)
+    folder = wanted.parent
+    if not folder.is_dir():
+        return None
+
+    def key(text: str) -> str:
+        text = text.lower().strip()
+        for suffix in TEXT_SUFFIXES:
+            text = text.removesuffix(suffix)
+        return text.removesuffix("es") if text.endswith("ies") else text.rstrip("s")
+
+    target = key(wanted.name)
+    best, best_score = None, 0.0
+    for item in folder.iterdir():
+        if item.name.startswith(".") or (notes_only and item.suffix.lower() not in TEXT_SUFFIXES):
+            continue
+        candidate = key(item.name)
+        score = 1.0 if candidate == target else SequenceMatcher(None, candidate, target).ratio()
+        if score > best_score:
+            best, best_score = item, score
+    if best is None or best_score < 0.85:
+        return None
+    return safe_path(str(best.relative_to(config.WORKSPACE.resolve())))
+
+
 def _display(path: Path) -> str:
     return path.stem if path.suffix.lower() in TEXT_SUFFIXES else path.name
 
@@ -58,6 +87,8 @@ def read_file(name: str) -> Result:
     path = safe_path(name)
     if not path.exists() and not name.strip().lower().endswith(TEXT_SUFFIXES):
         path = _note_path(name)
+    if not path.exists():
+        path = _closest(name, notes_only=True) or path
     if path.is_dir():
         return Result(False, f"{path.name} is a folder. Ask me what's in your workspace instead.")
     if not path.exists():
@@ -90,3 +121,48 @@ def list_dir() -> Result:
         if items:
             parts.append(f"{len(items)} {one if len(items) == 1 else many}: {_spoken_list(items)}")
     return Result(True, "Your workspace has " + "; ".join(parts) + ".")
+
+
+def _trash(path: Path) -> None:
+    """Into the macOS Trash, so a misheard delete can be undone from Finder."""
+    from Foundation import NSFileManager, NSURL
+    ok, _, error = NSFileManager.defaultManager().trashItemAtURL_resultingItemURL_error_(
+        NSURL.fileURLWithPath_(str(path)), None, None)
+    if not ok:
+        raise OSError(str(error))
+
+
+def _workspace_items() -> list[Path]:
+    root = config.WORKSPACE.resolve(strict=True)
+    return sorted(p for p in root.iterdir() if not p.name.startswith("."))
+
+
+def delete(name: str, confirm: bool = False) -> Result:
+    path = safe_path(name)
+    if not path.exists() and not name.strip().lower().endswith(TEXT_SUFFIXES):
+        note = _note_path(name)
+        path = note if note.exists() else path
+    if not path.exists() and not path.is_symlink():
+        path = _closest(name, notes_only=False) or path
+    if not path.exists() and not path.is_symlink():
+        return Result(False, f"I couldn't find {name.strip()} in your workspace.")
+    kind = "folder" if path.is_dir() else "note" if path.suffix.lower() in TEXT_SUFFIXES else "file"
+    if not confirm:
+        return Result(False, f"Move the {kind} {_display(path)} to the Trash?",
+                      needs_confirmation=True)
+    _trash(path)
+    return Result(True, f"Moved the {kind} {_display(path)} to the Trash. You can get it back "
+                        "from there.")
+
+
+def delete_all(confirm: bool = False) -> Result:
+    items = _workspace_items()
+    if not items:
+        return Result(True, "Your workspace is already empty.")
+    if not confirm:
+        return Result(False, f"Move all {len(items)} items in your workspace to the Trash?",
+                      needs_confirmation=True)
+    for item in items:
+        _trash(item)
+    return Result(True, f"Moved {len(items)} items to the Trash. You can get them back from "
+                        "there.")

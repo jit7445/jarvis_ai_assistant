@@ -24,6 +24,8 @@ _HANDLERS: dict[str, Callable[[dict[str, Any], bool], Result]] = {
     "fs.write_file": lambda a, confirm: fs.write_file(a["name"], a["body"], confirm),
     "fs.read_file": lambda a, _: fs.read_file(a["name"]),
     "fs.list_dir": lambda a, _: fs.list_dir(),
+    "fs.delete": lambda a, confirm: fs.delete(a["name"], confirm),
+    "fs.delete_all": lambda a, confirm: fs.delete_all(confirm),
     "app.open": _open_app,
     "web.research": lambda a, _: research.run(a["topic"]),
     "video.notes_current": lambda a, _: video.notes_current(),

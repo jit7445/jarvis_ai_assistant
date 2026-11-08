@@ -38,7 +38,6 @@ def test_routes(spoken, tool, args):
     " ...",
     " Jarvis.",
     " What's the weather like today?",
-    " Delete everything in my workspace.",
     " Create a folder.",
     " Create a folder called",
     " Make a note.",
@@ -113,7 +112,7 @@ def test_natural_phrasings(spoken, tool, args):
     "Jarvis, make a new folder", "create a folder", "create a folder for", "make a note saying buy milk",
     "open my browser", "run the tests", "open Finder",
     # not commands at all
-    "what's the weather today", "stop the music", "delete my notes", "make it louder",
+    "what's the weather today", "stop the music", "make it louder",
     "I need a break",
 ])
 def test_left_for_the_planner(spoken):

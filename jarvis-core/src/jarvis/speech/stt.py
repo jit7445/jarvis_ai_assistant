@@ -25,7 +25,21 @@ def is_noise(text: str) -> bool:
     return " ".join(words.split()).strip(" .,!?").lower() in _FILLER
 
 
+server = None  # a running WhisperServer, set by the app
+
+
 def transcribe(audio: np.ndarray) -> str:
+    """Through the resident server when it is up, else a one-off whisper-cli run."""
+    if server is not None and server.ready:
+        from jarvis.speech.server import ServerUnavailable
+        try:
+            return clean(server.transcribe(audio, config.WHISPER_PROMPT))
+        except ServerUnavailable:
+            pass
+    return _transcribe_cli(audio)
+
+
+def _transcribe_cli(audio: np.ndarray) -> str:
     with tempfile.TemporaryDirectory(prefix="jarvis-") as tmp:
         wav = Path(tmp) / "command.wav"
         write(wav, config.SAMPLE_RATE, audio.astype(np.int16))

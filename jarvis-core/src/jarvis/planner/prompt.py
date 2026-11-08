@@ -7,6 +7,8 @@ ABOUT = {
                      "or an empty string.",
     "fs.read_file": "Read a note aloud. name: the note name.",
     "fs.list_dir": "Say what folders and notes exist.",
+    "fs.delete": "Move one folder or note to the Trash (the user is asked first). name: its name.",
+    "fs.delete_all": "Move everything in the workspace to the Trash (the user is asked first).",
     "app.open": "Open an app. app_name: one of {apps}.",
     "web.research": "Look a subject up on Wikipedia and save a research note with sources. "
                     "topic: the subject, in a few words.",

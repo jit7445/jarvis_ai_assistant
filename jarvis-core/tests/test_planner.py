@@ -125,7 +125,7 @@ def test_no_tool_fits(reply):
 
 @pytest.mark.parametrize("reply", [
     {"tool": "shell.run", "args": {"cmd": "rm -rf ~"}},
-    {"tool": "fs.delete", "args": {"name": "Projects"}},
+    {"tool": "fs.format_disk", "args": {"name": "Projects"}},
     {"tool": "fs.make_dir", "args": {}},
     {"tool": "fs.make_dir", "args": ["Projects"]},
     {"tool": 7}, {"tool": ["fs.list_dir"]}, [], "fs.list_dir", 42, None,

@@ -283,6 +283,9 @@ def main() -> None:
         planner = gemini.from_environment()
 
     config.WORKSPACE.mkdir(exist_ok=True)
+    from jarvis.speech.server import WhisperServer
+    stt.server = WhisperServer()
+    stt.server.start_in_background()
     app = AppKit.NSApplication.sharedApplication()
     app.setActivationPolicy_(AppKit.NSApplicationActivationPolicyAccessory)
     one_shot = bool(args.once or args.wav)
@@ -329,6 +332,7 @@ def main() -> None:
     # happens, so this timer wakes the interpreter often enough for Ctrl+C to land.
     AppKit.NSTimer.scheduledTimerWithTimeInterval_repeats_block_(0.25, True, lambda timer: None)
     AppHelper.runEventLoop()
+    stt.server.stop()
     if live.active():
         print("Saving your video notes before quitting...", flush=True)
         print(live.stop().message, flush=True)

@@ -11,7 +11,7 @@ def test_valid_intent_passes():
 
 @pytest.mark.parametrize("intent", [
     Intent("shell.run", {"cmd": "ls"}),
-    Intent("fs.delete_all", {}),
+    Intent("fs.format_disk", {}),
     Intent("FS.MAKE_DIR", {"name": "x"}),
     Intent("fs.make_dir", {}),
     Intent("fs.make_dir", {"name": "x", "path": "/etc"}),
@@ -30,7 +30,8 @@ def test_invalid_intents_are_refused(intent):
 
 
 def test_registry_has_exactly_the_planned_tools():
-    assert set(TOOLS) == {"fs.make_dir", "fs.write_file", "fs.read_file", "fs.list_dir", "app.open", "web.research",
+    assert set(TOOLS) == {"fs.make_dir", "fs.write_file", "fs.read_file", "fs.list_dir", "fs.delete", "fs.delete_all",
+                           "app.open", "web.research",
                            "video.notes_current", "video.notes_file",
                            "video.notes_live", "video.notes_stop",
                            "code.open_repo", "code.ask_claude", "code.review", "code.accept",

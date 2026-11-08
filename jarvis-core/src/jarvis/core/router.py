@@ -86,6 +86,14 @@ _PATTERNS: list[tuple[re.Pattern[str], str]] = [
      "fs.write_file"),
     (rf"^new note (?:{_NAMED} )?{_NOT_NAME}(?P<name>.+?)(?:{_BODY}(?P<body>.+))?$",
      "fs.write_file"),
+    # deleting: everything, then one item (both always ask first)
+    (rf"^(?:delete|remove|clear|empty|wipe|erase|trash|clean)(?: out)? (?:all|everything"
+     rf"|the whole workspace|my whole workspace|my workspace|the workspace)"
+     rf"(?: {_WS}| from (?:my |the )?workspace)?$"
+     rf"|^(?:clear|empty|wipe|clean)(?: out)? (?:my |the )?workspace$", "fs.delete_all"),
+    (r"^(?:delete|remove|trash|erase|get rid of|throw away) (?!all\b)(?:the |my )?(?:folder |note |file )?"
+     r"(?:called |named )?(?P<name>.+?)(?: folder| note| file)?(?: from (?:my |the )?workspace)?$",
+     "fs.delete"),
     # listing
     (rf"^(?:what's|what is|whats) (?:in|inside) (?:my |the )?workspace$"
      rf"|^(?:list|show|tell)(?: me)? (?:all )?(?:of )?(?:what's {_WS}|what i have(?: {_WS})?"

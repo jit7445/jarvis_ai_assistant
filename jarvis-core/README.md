@@ -49,7 +49,7 @@ whisper.cpp is built from source, pinned to v1.9.1, using the venv's arm64 cmake
 git clone --depth 1 --branch v1.9.1 https://github.com/ggml-org/whisper.cpp.git
 cd whisper.cpp
 cmake -B build -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF
-cmake --build build -j 4 --config Release --target whisper-cli
+cmake --build build -j 4 --config Release --target whisper-cli whisper-server
 sh ./models/download-ggml-model.sh base.en
 ```
 
