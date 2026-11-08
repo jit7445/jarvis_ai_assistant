@@ -12,9 +12,12 @@ dependencies = [
     "numpy==2.4.6",
     "scipy==1.17.1",
     "sounddevice==0.5.6",
+    "yt-dlp==2026.10.21",
     "pyobjc-framework-ApplicationServices==13.0",
     "pyobjc-framework-Cocoa==13.0",
+    "pyobjc-framework-CoreMedia==13.0",
     "pyobjc-framework-Quartz==13.0",
+    "pyobjc-framework-ScreenCaptureKit==13.0",
 ]
 
 [project.scripts]

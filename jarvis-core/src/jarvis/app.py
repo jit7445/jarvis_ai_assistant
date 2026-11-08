@@ -19,6 +19,7 @@ from jarvis.core.assistant import Hooks, State
 from jarvis.core.wake import is_stop, split_wake
 from jarvis.speech import stt, tts
 from jarvis.ui.overlay import Overlay
+from jarvis.video import live
 
 RIGHT_OPTION_KEYCODE = 61
 # Device-dependent bit for the right-hand Option key (NX_DEVICERALTKEYMASK); the public
@@ -61,7 +62,7 @@ class Jarvis:
         self.verbose = verbose
         self.wake = wake
         self.planner = planner
-        self.jobs: queue.Queue[tuple[str, np.ndarray]] = queue.Queue()
+        self.jobs: queue.Queue[tuple[str, object]] = queue.Queue()
         self.utterances: queue.Queue[np.ndarray] = queue.Queue()
         self.awaiting_command = threading.Event()
         self.quitting = False
@@ -70,6 +71,7 @@ class Jarvis:
         self.cancelled = False
         self.pressed_at = 0.0
         self.session = 0
+        live.on_auto_stop(lambda result: self.jobs.put(("announce", result)))
         threading.Thread(target=self._work, daemon=True).start()
 
     def log(self, label: str, text: str = "") -> None:
@@ -112,6 +114,8 @@ class Jarvis:
 
     @property
     def idle_text(self) -> str:
+        if live.active():
+            return "Taking video notes\u2026 say \u201cJarvis, stop notes\u201d."
         return "Say \u201cJarvis\u201d to talk." if self.wake else "Hold right Option to talk."
 
     def settle(self, after: float = 0.0) -> None:
@@ -173,7 +177,10 @@ class Jarvis:
             self.listener.enabled = False
             shown = True
             try:
-                if kind == "utterance":
+                if kind == "announce":
+                    self._show(State.DONE if audio.ok else State.FAILED, audio.message)
+                    self._speak(audio.message)
+                elif kind == "utterance":
                     shown = self._on_utterance(audio)
                 else:
                     assistant.handle(audio, self._hooks())
@@ -182,8 +189,13 @@ class Jarvis:
             finally:
                 if shown:
                     AppHelper.callAfter(self.settle, 1.5)
+                pending = []
                 while not self.jobs.empty():
-                    self.jobs.get_nowait()
+                    job = self.jobs.get_nowait()
+                    if job[0] == "announce":
+                        pending.append(job)
+                for job in pending:
+                    self.jobs.put(job)
                 time.sleep(COOLDOWN_SECONDS)
                 self.busy = False
                 if self.quitting:
@@ -314,6 +326,9 @@ def main() -> None:
     # happens, so this timer wakes the interpreter often enough for Ctrl+C to land.
     AppKit.NSTimer.scheduledTimerWithTimeInterval_repeats_block_(0.25, True, lambda timer: None)
     AppHelper.runEventLoop()
+    if live.active():
+        print("Saving your video notes before quitting...", flush=True)
+        print(live.stop().message, flush=True)
 
 
 if __name__ == "__main__":

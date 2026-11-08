@@ -40,3 +40,13 @@ def transcribe(audio: np.ndarray) -> str:
 def clean(text: str) -> str:
     """Drop whisper's sound labels such as "(pop)" or "[MUSIC]", keeping the words."""
     return " ".join(_ANNOTATION.sub(" ", text).split())
+
+
+def transcribe_file(wav: Path, timeout: float) -> str:
+    """A long recording, such as a video's audio. No command prompt: it would bias the words."""
+    result = subprocess.run(
+        [str(config.WHISPER_CLI), "-m", str(config.WHISPER_MODEL), "-f", str(wav), "-t", "4",
+         "-nt", "-np"],
+        capture_output=True, text=True, check=True, timeout=timeout,
+    )
+    return clean(result.stdout)

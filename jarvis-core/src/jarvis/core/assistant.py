@@ -114,6 +114,10 @@ def _act(text: str, hooks: Hooks) -> None:
     time.sleep(hooks.preview_seconds)
     if intent.tool == "web.research":
         hooks.show(State.THINKING, f"Looking up {intent.args['topic']}\u2026")
+    elif intent.tool == "video.notes_stop":
+        hooks.show(State.THINKING, "Writing your video notes\u2026")
+    elif intent.tool in ("video.notes_current", "video.notes_file"):
+        hooks.show(State.THINKING, "Listening to the video\u2026 this can take a few minutes.")
 
     result = execute(intent)
     if not result.needs_confirmation:

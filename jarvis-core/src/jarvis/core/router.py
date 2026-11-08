@@ -25,7 +25,27 @@ _PREFIX = re.compile(
 _SUFFIX = re.compile(r"(?:[\s,]+(?:please|jarvis|thanks|thank you|for me|now|right now))+$",
                      re.IGNORECASE)
 
+_VIDEO = r"(?:youtube |yt )?video"
+_NOTES = r"(?:make|take|write|create|save|give|get)(?: me)? (?:some |a |the )?(?:notes?|summary)"
+
 _PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    # live video notes: stop, then explicit start
+    (r"^(?:stop|end|finish|done with|wrap up|save)(?: (?:taking|making|the|my|video|recording|those))*"
+     r" (?:notes?|recording)(?: now)?$"
+     r"|^(?:stop listening to|i'm done with|i am done with|i finished) (?:the |this )?(?:video|movie|lecture)$"
+     r"|^(?:the )?video (?:is )?(?:done|over|finished)$", "video.notes_stop"),
+    (r"^(?:start )?(?:take|taking|make|making) notes (?:while i watch|as i watch|on what's playing)$"
+     r"|^start (?:taking |making )?(?:video )?notes$"
+     r"|^listen (?:to (?:the |my )?(?:video|sound|audio|mac) )?and (?:take|make) notes$",
+     "video.notes_live"),
+    # video notes: the one playing now, then a file by name
+    (rf"^(?:{_NOTES} (?:from|on|of|about|for)|summari[sz]e|transcribe|take notes on|make notes on"
+     rf"|note down|listen to) (?:this|the|that|my|the current|my current) {_VIDEO}"
+     rf"(?: (?:i'm|i am|that's|that is) (?:watching|playing|on))?(?: (?:now|right now))?$",
+     "video.notes_current"),
+    (rf"^(?:{_NOTES} (?:from|on|of|about|for)|summari[sz]e|transcribe|take notes on|make notes on"
+     rf"|listen to) (?:the |my )?{_VIDEO} (?:file )?(?:called |named |titled )?(?P<query>.+)$",
+     "video.notes_file"),
     # folders
     (rf"^{_MAKE} {_A}{_DIR} (?:{_WS} )?(?:{_NAMED} )?{_NOT_NAME}(?P<name>.+?)(?: {_WS})?$",
      "fs.make_dir"),

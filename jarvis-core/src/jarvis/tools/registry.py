@@ -7,6 +7,10 @@ TOOLS: dict[str, dict[str, type]] = {
     "fs.list_dir": {},
     "app.open": {"app_name": str},
     "web.research": {"topic": str},
+    "video.notes_current": {},
+    "video.notes_file": {"query": str},
+    "video.notes_live": {},
+    "video.notes_stop": {},
 }
 
 

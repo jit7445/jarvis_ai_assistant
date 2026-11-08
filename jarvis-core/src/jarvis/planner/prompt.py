@@ -10,6 +10,12 @@ ABOUT = {
     "app.open": "Open an app. app_name: one of {apps}.",
     "web.research": "Look a subject up on Wikipedia and save a research note with sources. "
                     "topic: the subject, in a few words.",
+    "video.notes_current": "Make notes on the video the user is watching now, in any app or site.",
+    "video.notes_live": "Start listening to whatever the Mac is playing and take notes until told "
+                        "to stop.",
+    "video.notes_stop": "Stop taking notes on the video and save them.",
+    "video.notes_file": "Find a video or audio file on the Mac by name, listen to it and save notes. "
+                        "query: words from the file name.",
 }
 
 

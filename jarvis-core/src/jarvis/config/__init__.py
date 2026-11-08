@@ -50,3 +50,13 @@ RESEARCH_PAGE_CHARS = 6000
 RESEARCH_TIMEOUT_SECONDS = 10.0
 # Summarising two pages takes longer than planning a command; the card shows progress meanwhile.
 SUMMARY_TIMEOUT_SECONDS = 30.0
+
+# Video notes. Video and audio files may be read anywhere in the home folder, read-only, by these
+# extensions only; the audio is transcribed on this Mac and only the text goes to Gemini.
+VIDEO_DIR = "videos"
+MEDIA_SUFFIXES = (".mp4", ".mov", ".m4v", ".mkv", ".webm", ".avi", ".mp3", ".m4a", ".wav", ".aac")
+MAX_VIDEO_SECONDS = 90 * 60
+MAX_TRANSCRIPT_CHARS = 200_000
+FFMPEG_CANDIDATES = ("/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg")
+# Live video notes stop by themselves after this much quiet (video paused or finished).
+LIVE_SILENCE_STOP_SECONDS = 5 * 60

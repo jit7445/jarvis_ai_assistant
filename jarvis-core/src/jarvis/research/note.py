@@ -21,10 +21,16 @@ def render(topic: str, summary: str, sources: list[Source], fetched: date) -> st
 
 
 def write(topic: str, summary: str, sources: list[Source], fetched: date) -> Path:
-    folder = safe_path(config.RESEARCH_DIR)
+    return save(config.RESEARCH_DIR, f"{fetched.isoformat()}-{slug(topic)}",
+                render(topic, summary, sources, fetched))
+
+
+def save(folder_name: str, stem: str, text: str) -> Path:
+    """A new Markdown file in a workspace folder; adds -2, -3... rather than replace one."""
+    folder = safe_path(folder_name)
     folder.mkdir(exist_ok=True)
-    base = f"{config.RESEARCH_DIR}/{fetched.isoformat()}-{slug(topic)}"
-    data = render(topic, summary, sources, fetched).encode("utf-8")
+    base = f"{folder_name}/{stem}"
+    data = text.encode("utf-8")
     for n in range(1, 100):
         path = safe_path(f"{base}{'' if n == 1 else f'-{n}'}.md")
         try:

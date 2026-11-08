@@ -84,6 +84,12 @@ Only the sentence, recent exchanges and the tool list are sent. The reply is che
 
 "Look up black holes and save me a note", "research the Roman Empire" or "find out about whisper.cpp" fetches up to two Wikipedia articles, has Gemini summarise them in a separate call with no tools, and saves `workspace/research/YYYY-MM-DD-topic.md` with the sources and the date they were fetched. Page text is treated as data: it is never sent to the planner and never acted on. Needs `GEMINI_API_KEY`. Details in `docs/phase8_results.md`.
 
+## Video notes
+
+"Make notes from this video" works for whatever you are watching. A YouTube tab (Safari, Chrome, Brave, Edge, Arc) or a QuickTime file is read whole. Anything else (any site, any app) is heard live from the Mac's own sound output until you say "Jarvis, stop notes", 5 minutes of quiet pass, or 90 minutes are up; this needs Screen Recording permission. "Make notes from the video called lecture 3" finds a video or audio file anywhere in your home folder by name (Spotlight). Jarvis extracts the audio, transcribes it on this Mac with whisper, has Gemini write a summary in a separate call with no tools, and saves `workspace/videos/YYYY-MM-DD-title.md` with the source, the summary and the full transcript. Without a key the transcript is still saved.
+
+The first time, macOS asks to let your terminal control the browser or QuickTime (Automation); allow it. Files are read only, only by media extension (mp4, mov, m4v, mkv, webm, avi, mp3, m4a, wav, aac), never in hidden folders or `~/Library`. Videos over 90 minutes are refused. whisper `base.en` is English only. ffmpeg is used when installed, macOS `afconvert` otherwise. Details in `docs/video_notes.md`.
+
 ## Opening apps
 
 "Open Safari" opens only apps listed in `ALLOWED_APPS` in `src/jarvis/config/__init__.py` (Safari, Notes, Music, Calendar and Chrome). Any other name is refused aloud and never reaches `open`. Terminal, iTerm, Script Editor, Keychain Access, System Settings and a few others sit in `BANNED_APPS` and stay refused even if added to the allowlist. To add an app, add a line such as `"slack": "Slack",` with the spoken name in lowercase. Details in `docs/phase6_results.md`.
@@ -114,7 +120,7 @@ Records 5 seconds at 16 kHz mono to `workspace/mic_test.wav`. The first run trig
 
 | Path | Contents | In git |
 | --- | --- | --- |
-| `src/jarvis/` | The package: `app.py` (entry point), `core/` (intent, router, confirmation, assistant pipeline), `tools/` (registry, safe paths, file tools, app launcher, executor), `speech/` (whisper, say), `audio/` (recorder), `ui/` (overlay), `planner/` (Gemini fallback), `research/` (Wikipedia notes), `config/` | yes |
+| `src/jarvis/` | The package: `app.py` (entry point), `core/` (intent, router, confirmation, assistant pipeline), `tools/` (registry, safe paths, file tools, app launcher, executor), `speech/` (whisper, say), `audio/` (recorder), `ui/` (overlay), `planner/` (Gemini fallback), `research/` (Wikipedia notes), `video/` (video notes), `config/` | yes |
 | `scripts/` | Manual hardware checks | yes |
 | `tests/` | pytest suite | yes |
 | `docs/` | Phase results and measurements | yes |

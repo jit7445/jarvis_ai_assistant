@@ -28,6 +28,7 @@ Built phase by phase from the Jarvis V1 plan.
 | 6 | App launcher (allowlist only) | done |
 | 7 | Gemini fallback (validated JSON proposals) | done |
 | 8 | Web research notes (Wikipedia, sourced) | done |
+| extra | Casual chat; video notes (YouTube tab or any local video, transcribed on the Mac) | done |
 | 9-10 | Integrated prototype, two-service split | not started |
 | 11 | Overlay (Siri-style card, sound cues, push-to-talk) | done early |
 | 12 | Wake word (whisper-based) and stop by voice | done early, false-activation count pending |

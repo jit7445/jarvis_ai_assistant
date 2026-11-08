@@ -30,27 +30,33 @@ def build_request(topic: str, sources: list[Source]) -> str:
     return f"Topic: {topic}\n\n{pages}"
 
 
-def clean(summary: str) -> str:
+def clean(summary: str, limit: int = MAX_SUMMARY_CHARS) -> str:
     """Keep the note's own structure: model text cannot add headings."""
     lines = [line.lstrip("#").strip() if line.lstrip().startswith("#") else line.rstrip()
              for line in summary.strip().splitlines()]
     text = "\n".join(lines).strip()
-    return text[:MAX_SUMMARY_CHARS]
+    return text[:limit]
 
 
 class GeminiSummariser:
-    def __init__(self, api_key: str, model: str = config.GEMINI_MODEL, client=None) -> None:
+    """A text-only Gemini call: no tools, so whatever comes back can only be saved as text."""
+
+    def __init__(self, api_key: str, model: str = config.GEMINI_MODEL, client=None,
+                 system_prompt: str = SYSTEM_PROMPT, max_tokens: int = 800,
+                 timeout: float = config.SUMMARY_TIMEOUT_SECONDS) -> None:
         self.model = model
         self._client = client or genai.Client(api_key=api_key, http_options=types.HttpOptions(
-            timeout=int(config.SUMMARY_TIMEOUT_SECONDS * 1000),
-            retry_options=types.HttpRetryOptions(attempts=1)))
-        self._config = types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT,
-                                                   temperature=0.2, max_output_tokens=800)
+            timeout=int(timeout * 1000), retry_options=types.HttpRetryOptions(attempts=1)))
+        self._config = types.GenerateContentConfig(system_instruction=system_prompt,
+                                                   temperature=0.2, max_output_tokens=max_tokens)
 
     def summarise(self, topic: str, sources: list[Source]) -> str:
+        return self.ask(build_request(topic, sources))
+
+    def ask(self, request: str) -> str:
         try:
             response = self._client.models.generate_content(
-                model=self.model, contents=build_request(topic, sources), config=self._config)
+                model=self.model, contents=request, config=self._config)
         except errors.ClientError as error:
             if error.code == 429:
                 raise PlannerBusy() from None
@@ -62,6 +68,6 @@ class GeminiSummariser:
         return response.text if isinstance(response.text, str) else ""
 
 
-def from_environment() -> GeminiSummariser | None:
+def from_environment(**options) -> GeminiSummariser | None:
     key = os.environ.get("GEMINI_API_KEY", "").strip()
-    return GeminiSummariser(key) if key else None
+    return GeminiSummariser(key, **options) if key else None

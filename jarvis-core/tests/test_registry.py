@@ -30,4 +30,6 @@ def test_invalid_intents_are_refused(intent):
 
 
 def test_registry_has_exactly_the_planned_tools():
-    assert set(TOOLS) == {"fs.make_dir", "fs.write_file", "fs.read_file", "fs.list_dir", "app.open", "web.research"}
+    assert set(TOOLS) == {"fs.make_dir", "fs.write_file", "fs.read_file", "fs.list_dir", "app.open", "web.research",
+                           "video.notes_current", "video.notes_file",
+                           "video.notes_live", "video.notes_stop"}
