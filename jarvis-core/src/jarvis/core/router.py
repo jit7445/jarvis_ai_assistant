@@ -25,10 +25,38 @@ _PREFIX = re.compile(
 _SUFFIX = re.compile(r"(?:[\s,]+(?:please|jarvis|thanks|thank you|for me|now|right now))+$",
                      re.IGNORECASE)
 
+# whisper writes VS Code as "BS code", "V.S. code", "vscode"; Claude as "cloud" or "Claud".
+_VSCODE = r"(?:(?:v\.? ?s\.?|b\.? ?s\.?|visual studio|visual) ?code|vscode|code)"
+_CLAUDE = r"(?:claude|claud|cloud|clod|clawed)(?: code)?"
 _VIDEO = r"(?:youtube |yt )?video"
 _NOTES = r"(?:make|take|write|create|save|give|get)(?: me)? (?:some |a |the )?(?:notes?|summary)"
 
 _PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    # coding with Claude Code in VS Code
+    (rf"^open (?:up )?(?:the |my )?(?:project |repo |repository |folder )?(?P<name>.+?)"
+     rf"(?: project| repo| repository| folder)? (?:in|with|on|using) {_VSCODE}$"
+     rf"|^open {_VSCODE} (?:with|for|in|on) (?:the |my )?"
+     rf"(?:project |repo |repository |folder )?(?P<name2>.+?)(?: project| repo| repository)?$"
+     rf"|^(?:find|search for|look for|open)(?: the| my)? (?:repo|repository|project|folder),?"
+     rf" (?:call|called|named) (?P<name3>.+?)(?:,? and open it)?(?: in {_VSCODE})?$",
+     "code.open_repo"),
+    (rf"^(?:review (?:the |my |this )?(?:code|changes)|do a code review|code review"
+     rf"|(?:ask|tell) {_CLAUDE} to review (?:the |my |this )?(?:code|changes))$", "code.review"),
+    (rf"^(?:what did {_CLAUDE} say|what (?:was|is) {_CLAUDE}'?s? (?:answer|reply)"
+     rf"|(?:read|repeat|tell)(?: me)? (?:the |{_CLAUDE}'?s? )?(?:answer|reply|response)(?: again)?"
+     rf"|(?:read|repeat) (?:what )?{_CLAUDE} (?:said|wrote)(?: again)?)$", "code.last_reply"),
+    (r"^(?:accept|approve|keep) (?:the |these |those |all )?(?:changes?|edits?|diff|code)$",
+     "code.accept"),
+    (r"^(?:reject|decline|discard|undo) (?:the |these |those |all )?(?:changes?|edits?|diff)$",
+     "code.reject"),
+    (r"^(?P<prompt4>(?:explain|describe|summari[sz]e|walk me through|go through|read|analy[sz]e)"
+     r"(?: me| to me)? (?:the |this |my |that )?(?:code|codebase|source code|source|repo|repository)"
+     r"(?: (?:of|in|for|from) .+)?)$"
+     r"|^(?P<prompt5>(?:what does|how does) (?:the |this |my )?(?:code|codebase|project|repo|app)"
+     r" .+)$", "code.ask_claude"),
+    (rf"^(?:tell|ask|have|let|get|make|use) {_CLAUDE}(?: to)?[,:]? (?P<prompt>.+)$"
+     rf"|^(?:send|give) (?:this |that )?to {_CLAUDE}[,:]? (?P<prompt2>.+)$"
+     rf"|^{_CLAUDE}[,:] (?P<prompt3>.+)$", "code.ask_claude"),
     # live video notes: stop, then explicit start
     (r"^(?:stop|end|finish|done with|wrap up|save)(?: (?:taking|making|the|my|video|recording|those))*"
      r" (?:notes?|recording)(?: now)?$"
@@ -87,9 +115,14 @@ _PATTERNS: list[tuple[re.Pattern[str], str]] = [
 _COMPILED = [(re.compile(p, re.IGNORECASE), tool) for p, tool in _PATTERNS]
 
 
+# whisper repeats a false start: "open, Jarvis, open, demo repo".
+_STUTTER = re.compile(r"^(\w+)[\s,.]+(?:jarvis[\s,.]+)?\1\b[\s,.]*", re.IGNORECASE)
+
+
 def normalise(transcript: str) -> str:
     text = transcript.replace("’", "'").replace("‘", "'")
     text = " ".join(text.split())
+    text = _STUTTER.sub(r"\1 ", text.strip(" \"'.,!?;:"))
     text = text.strip(" \"'.,!?;:")
     for _ in range(3):
         text = _PREFIX.sub("", text).strip(" ,")
@@ -118,12 +151,17 @@ def route(transcript: str) -> Intent | None:
         match = pattern.match(text)
         if not match:
             continue
-        groups = {k.rstrip("23"): v for k, v in match.groupdict().items() if v is not None}
+        groups = {k.rstrip("2345"): v for k, v in match.groupdict().items() if v is not None}
         # Trailing punctuation only: stripping leading dots would turn ".env" into "env".
         args = {k: v.strip(" \"'").rstrip(".,") for k, v in groups.items()}
         if tool == "fs.write_file":
             args.setdefault("body", "")
         if tool == "app.open" and not _known_app(args.get("app_name", "")):
+            # "open livedoc": not an app, but maybe a project.
+            from jarvis.coding import repos
+            name = args.get("app_name", "")
+            if repos.find(name) is not None:
+                return check(Intent("code.open_repo", {"name": name}))
             return None
         try:
             return check(Intent(tool, args))

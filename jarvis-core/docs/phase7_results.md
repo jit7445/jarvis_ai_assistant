@@ -78,3 +78,16 @@ Live run (`gemini-3.5-flash-lite`, one session, nothing executed):
 | delete all my files | I am sorry, but I cannot do that yet. | 0.93 s |
 | I need a place to keep my recipes | tool `fs.make_dir {name: Recipes}` | 1.14 s |
 | thanks, you're great | You are very welcome! Let me know if you need anything else. | 0.90 s |
+
+## Lenient shape, strict power (2026-11-08)
+
+A live run refused a correct "open demo repo" because the reply's shape differed slightly. `to_intent` is now lenient about shape and strict about power:
+
+| Now accepted | Still refused |
+| --- | --- |
+| Extra fields or arguments (dropped, never used) | A tool not in the registry |
+| Numbers where text is expected (turned into text) | A missing argument, or `true`, `null`, lists as values |
+| `args` missing or `null` for a tool with no arguments | File names outside the workspace (`safe_path`) |
+| A `confirm` field (ignored: confirm is always off) | Apps off the allowlist (executor) |
+
+The model still cannot confirm anything: overwrites and prompts to Claude always need a spoken yes. When a proposal is refused, `--verbose` prints the tool name and the reason (field and argument names only, never your words).

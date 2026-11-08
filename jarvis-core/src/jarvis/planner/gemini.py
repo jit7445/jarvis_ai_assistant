@@ -22,7 +22,7 @@ class GeminiPlanner:
             timeout=int(timeout * 1000), retry_options=types.HttpRetryOptions(attempts=1)))
         self._config = types.GenerateContentConfig(
             system_instruction=system_prompt(), response_mime_type="application/json",
-            temperature=0.4, max_output_tokens=300)
+            temperature=0.2, max_output_tokens=300)
         self._history: list[types.Content] = []
         self._last_turn = 0.0
 

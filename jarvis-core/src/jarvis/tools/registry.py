@@ -11,6 +11,12 @@ TOOLS: dict[str, dict[str, type]] = {
     "video.notes_file": {"query": str},
     "video.notes_live": {},
     "video.notes_stop": {},
+    "code.open_repo": {"name": str},
+    "code.ask_claude": {"prompt": str},
+    "code.review": {},
+    "code.accept": {},
+    "code.reject": {},
+    "code.last_reply": {},
 }
 
 

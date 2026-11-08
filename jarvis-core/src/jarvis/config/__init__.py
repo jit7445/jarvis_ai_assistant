@@ -13,7 +13,8 @@ SAMPLE_RATE = 16000
 # noise: it never reproduces a command.
 WHISPER_PROMPT = (
     "Jarvis, create a folder called Projects. Jarvis, make a note called groceries. "
-    "Jarvis, read me groceries. Jarvis, what's in my workspace? Jarvis, open Safari."
+    "Jarvis, read me groceries. Jarvis, what's in my workspace? Jarvis, open Safari. "
+    "Jarvis, open the demo repo in VS Code. Jarvis, tell Claude to add tests."
 )
 
 # Spoken name (lowercase) to the macOS app it opens. Only you edit this; no command can change it.
@@ -60,3 +61,25 @@ MAX_TRANSCRIPT_CHARS = 200_000
 FFMPEG_CANDIDATES = ("/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg")
 # Live video notes stop by themselves after this much quiet (video paused or finished).
 LIVE_SILENCE_STOP_SECONDS = 5 * 60
+
+# Coding by voice: any git repository in the home folder can be opened in VS Code, and prompts go
+# to the Claude Code extension through its own link, filled in but not sent until a spoken yes.
+VSCODE_APP = "Visual Studio Code"
+# The code command focuses a folder's existing window; open -a makes an untitled workspace.
+VSCODE_CLI_CANDIDATES = ("/usr/local/bin/code", "/opt/homebrew/bin/code",
+                         "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code")
+VSCODE_PROCESS = "Code"
+CLAUDE_CODE_URI = "vscode://anthropic.claude-code/open"
+REPO_SEARCH_DEPTH = 5
+REPO_SKIP = {"Library", "Applications", "node_modules", "venv", "dist", "build", "target",
+             "Pictures", "Music", "Movies", "whisper.cpp", "site-packages", "__pycache__"}
+MAX_PROMPT_CHARS = 2000
+REVIEW_PROMPT = (
+    "Review the uncommitted changes in this repository (git diff, plus any new files). "
+    "List bugs, risky code and missing tests, most important first, with file and line. "
+    "Do not change any files."
+)
+# Claude Code writes each conversation to ~/.claude/projects/<folder with non-alphanumerics as ->/.
+CLAUDE_PROJECTS = Path.home() / ".claude" / "projects"
+CLAUDE_REPLY_WAIT_SECONDS = 15 * 60
+SPOKEN_REPLY_CHARS = 700

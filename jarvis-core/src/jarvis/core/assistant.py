@@ -37,6 +37,7 @@ class Hooks:
     preview_seconds: float = 0.6
     quit: Callable[[], None] = lambda: None
     planner: Planner | None = None
+    log: Callable[[str, str], None] = lambda label, text: None
 
 
 def _reply(hooks: Hooks, state: State, message: str) -> None:
@@ -70,6 +71,14 @@ def handle_text(text: str, hooks: Hooks) -> None:
         _reply(hooks, State.FAILED, "Something went wrong, so I did nothing.")
 
 
+def _reason(proposal) -> str:
+    if not isinstance(proposal, dict):
+        return "not a JSON object"
+    args = proposal.get("args")
+    keys = sorted(args) if isinstance(args, dict) else type(args).__name__
+    return f"reply keys {sorted(proposal)}, argument names {keys}"
+
+
 def _ask_planner(text: str, hooks: Hooks) -> Intent | None:
     """The planner's suggestion once it passes the same checks as the router, or None after
     saying why not."""
@@ -89,7 +98,11 @@ def _ask_planner(text: str, hooks: Hooks) -> Intent | None:
         return None
     try:
         intent = to_intent(proposal)
-    except (InvalidIntent, PermissionError):
+    except (InvalidIntent, PermissionError) as error:
+        # Tool name and reason only; never the transcript or argument values.
+        tool = proposal.get("tool") if isinstance(proposal, dict) else None
+        hooks.log("refused", f"{tool if isinstance(tool, str) else type(proposal).__name__}: "
+                             f"{type(error).__name__}, {_reason(proposal)}")
         _reply(hooks, State.FAILED, "Gemini suggested something I can't do, so I did nothing.")
         return None
     if intent is None:

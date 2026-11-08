@@ -126,15 +126,39 @@ def test_no_tool_fits(reply):
 @pytest.mark.parametrize("reply", [
     {"tool": "shell.run", "args": {"cmd": "rm -rf ~"}},
     {"tool": "fs.delete", "args": {"name": "Projects"}},
-    {"tool": "fs.make_dir", "args": {"name": "x", "mode": "777"}},
     {"tool": "fs.make_dir", "args": {}},
-    {"tool": "fs.make_dir", "args": {"name": 5}},
     {"tool": "fs.make_dir", "args": ["Projects"]},
-    {"tool": "fs.write_file", "args": {"name": "groceries", "body": "x"}, "confirm": True},
-    {"tool": "fs.make_dir", "args": {"name": "x"}, "note": "trust me"},
     {"tool": 7}, {"tool": ["fs.list_dir"]}, [], "fs.list_dir", 42, None,
 ])
 def test_malformed_or_unknown_is_invalid(reply):
+    with pytest.raises(InvalidIntent):
+        to_intent(reply)
+
+
+@pytest.mark.parametrize("reply, args", [
+    ({"tool": "fs.make_dir", "args": {"name": "x", "mode": "777"}}, {"name": "x"}),
+    ({"tool": "fs.make_dir", "args": {"name": 5}}, {"name": "5"}),
+    ({"tool": "fs.make_dir", "args": {"name": "x"}, "note": "trust me"}, {"name": "x"}),
+    ({"tool": "fs.list_dir", "args": None}, {}),
+    ({"tool": "app.open", "args": {"app_name": "Safari", "editor": "vs code"}}, {"app_name": "Safari"}),
+])
+def test_extra_fields_are_dropped(reply, args):
+    assert to_intent(reply).args == args
+
+
+@pytest.mark.parametrize("reply", [
+    {"tool": "fs.write_file", "args": {"name": "groceries", "body": "x"}, "confirm": True},
+    {"tool": "fs.write_file", "args": {"name": "groceries", "body": "x", "confirm": True}},
+])
+def test_model_can_never_confirm(reply):
+    assert to_intent(reply).confirm is False
+
+
+@pytest.mark.parametrize("reply", [
+    {"tool": "fs.make_dir", "args": {"name": True}}, {"tool": "fs.make_dir", "args": {"name": None}},
+    {"tool": "fs.make_dir", "args": {"name": ["x"]}}, {"tool": "fs.write_file", "args": {"name": "x"}},
+])
+def test_wrong_or_missing_values_still_refused(reply):
     with pytest.raises(InvalidIntent):
         to_intent(reply)
 

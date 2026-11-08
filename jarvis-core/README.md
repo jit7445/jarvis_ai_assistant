@@ -90,6 +90,10 @@ Only the sentence, recent exchanges and the tool list are sent. The reply is che
 
 The first time, macOS asks to let your terminal control the browser or QuickTime (Automation); allow it. Files are read only, only by media extension (mp4, mov, m4v, mkv, webm, avi, mp3, m4a, wav, aac), never in hidden folders or `~/Library`. Videos over 90 minutes are refused. whisper `base.en` is English only. ffmpeg is used when installed, macOS `afconvert` otherwise. Details in `docs/video_notes.md`.
 
+## Coding by voice
+
+"Open jarvis ai assistant in VS Code" opens any git repository in your home folder. "Tell Claude to add a login page" fills the prompt into Claude Code in that window, reads it back and sends it only on your spoken yes. "Review the code" asks Claude for a review; "accept the changes" / "reject the changes" answer its proposed edits. Needs Accessibility for the app Jarvis runs in. Details and safety notes in `docs/coding_by_voice.md`.
+
 ## Opening apps
 
 "Open Safari" opens only apps listed in `ALLOWED_APPS` in `src/jarvis/config/__init__.py` (Safari, Notes, Music, Calendar and Chrome). Any other name is refused aloud and never reaches `open`. Terminal, iTerm, Script Editor, Keychain Access, System Settings and a few others sit in `BANNED_APPS` and stay refused even if added to the allowlist. To add an app, add a line such as `"slack": "Slack",` with the spoken name in lowercase. Details in `docs/phase6_results.md`.
@@ -120,7 +124,7 @@ Records 5 seconds at 16 kHz mono to `workspace/mic_test.wav`. The first run trig
 
 | Path | Contents | In git |
 | --- | --- | --- |
-| `src/jarvis/` | The package: `app.py` (entry point), `core/` (intent, router, confirmation, assistant pipeline), `tools/` (registry, safe paths, file tools, app launcher, executor), `speech/` (whisper, say), `audio/` (recorder), `ui/` (overlay), `planner/` (Gemini fallback), `research/` (Wikipedia notes), `video/` (video notes), `config/` | yes |
+| `src/jarvis/` | The package: `app.py` (entry point), `core/` (intent, router, confirmation, assistant pipeline), `tools/` (registry, safe paths, file tools, app launcher, executor), `speech/` (whisper, say), `audio/` (recorder), `ui/` (overlay), `planner/` (Gemini fallback), `research/` (Wikipedia notes), `video/` (video notes), `coding/` (VS Code and Claude Code), `config/` | yes |
 | `scripts/` | Manual hardware checks | yes |
 | `tests/` | pytest suite | yes |
 | `docs/` | Phase results and measurements | yes |

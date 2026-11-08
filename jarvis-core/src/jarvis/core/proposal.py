@@ -3,7 +3,7 @@ from typing import Any
 
 from jarvis.core.intent import Intent
 from jarvis.tools.paths import safe_path
-from jarvis.tools.registry import InvalidIntent, check
+from jarvis.tools.registry import TOOLS, InvalidIntent, check
 
 _PATH_ARGS = ("name",)
 MAX_REPLY_CHARS = 500
@@ -13,19 +13,35 @@ _MARKUP = re.compile(r"[*_#`>|~]+|\[([^\]]*)\]\([^)]*\)")
 def to_intent(proposal: Any) -> Intent | None:
     """A checked Intent from a model's reply, or None when it says no tool fits.
 
-    Raises InvalidIntent or PermissionError for anything else. The model cannot set confirm, so an
-    overwrite it proposes still asks for a spoken yes.
+    Lenient about shape, strict about power: extra fields and arguments are dropped and numbers
+    become text, but the tool must exist, every argument it needs must be there, names go
+    through safe_path, and confirm is never taken from the model, so an overwrite or a prompt to
+    Claude still needs a spoken yes. Raises InvalidIntent or PermissionError otherwise.
     """
-    if not isinstance(proposal, dict) or not set(proposal) <= {"tool", "args", "reply"}:
+    if not isinstance(proposal, dict):
         raise InvalidIntent("reply is not a tool call")
-    tool, args = proposal.get("tool"), proposal.get("args", {})
+    tool = proposal.get("tool")
     if tool is None:
         return None
-    if not isinstance(tool, str):
-        raise InvalidIntent("tool must be a string")
-    intent = check(Intent(tool, args))
+    if not isinstance(tool, str) or tool not in TOOLS:
+        raise InvalidIntent("unknown tool")
+    args = proposal.get("args")
+    if args is None:
+        # Some replies put the arguments beside "tool" instead of inside "args".
+        args = {key: proposal[key] for key in TOOLS[tool] if key in proposal}
+    if not isinstance(args, dict):
+        raise InvalidIntent("arguments are not an object")
+    kept = {}
+    for key in TOOLS[tool]:
+        if key not in args:
+            raise InvalidIntent(f"missing {key}")
+        value = args[key]
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            value = str(value)
+        kept[key] = value
+    intent = check(Intent(tool, kept))
     for key in _PATH_ARGS:
-        if key in intent.args:
+        if key in intent.args and intent.tool.startswith("fs."):
             safe_path(intent.args[key])
     return intent
 

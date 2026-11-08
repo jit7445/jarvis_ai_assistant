@@ -4,7 +4,7 @@ from typing import Any
 
 from jarvis.core.intent import Intent
 from jarvis.core.result import Result
-from jarvis import research, video
+from jarvis import coding, research, video
 from jarvis.video import live
 from jarvis.tools import apps, fs
 from jarvis.tools.registry import InvalidIntent, check
@@ -30,6 +30,12 @@ _HANDLERS: dict[str, Callable[[dict[str, Any], bool], Result]] = {
     "video.notes_file": lambda a, _: video.notes_file(a["query"]),
     "video.notes_live": lambda a, _: live.start(),
     "video.notes_stop": lambda a, _: live.stop(),
+    "code.open_repo": lambda a, _: coding.open_repo(a["name"]),
+    "code.ask_claude": lambda a, confirm: coding.ask(a["prompt"], confirm),
+    "code.review": lambda a, confirm: coding.review(confirm),
+    "code.accept": lambda a, _: coding.decide(True),
+    "code.reject": lambda a, _: coding.decide(False),
+    "code.last_reply": lambda a, _: coding.last_reply(),
 }
 
 

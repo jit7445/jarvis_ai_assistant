@@ -19,6 +19,7 @@ from jarvis.core.assistant import Hooks, State
 from jarvis.core.wake import is_stop, split_wake
 from jarvis.speech import stt, tts
 from jarvis.ui.overlay import Overlay
+from jarvis import coding
 from jarvis.video import live
 
 RIGHT_OPTION_KEYCODE = 61
@@ -72,6 +73,8 @@ class Jarvis:
         self.pressed_at = 0.0
         self.session = 0
         live.on_auto_stop(lambda result: self.jobs.put(("announce", result)))
+        coding.on_reply(lambda result: self.jobs.put(("announce", result)))
+        coding.set_log(self.log)
         threading.Thread(target=self._work, daemon=True).start()
 
     def log(self, label: str, text: str = "") -> None:
@@ -110,7 +113,7 @@ class Jarvis:
     def _hooks(self) -> Hooks:
         return Hooks(show=self._show, speak=self._speak, transcribe=stt.transcribe,
                      listen=self._listen, quit=self._quit,
-                     planner=self.planner)
+                     planner=self.planner, log=self.log)
 
     @property
     def idle_text(self) -> str:
