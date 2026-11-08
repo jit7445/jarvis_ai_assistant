@@ -87,16 +87,40 @@ def test_segmenter_ignores_noise(stream):
 def test_segmenter_adapts_to_loud_room():
     seg = Segmenter()
     feed_all(seg, blocks(4, 600))
-    assert seg.threshold > 1500
+    assert seg.threshold >= 1400
     assert feed_all(seg, blocks(2, 600)) == []
     assert len(feed_all(seg, blocks(1, 9000) + blocks(1, 600))) == 1
 
 
-def test_steady_noise_that_starts_later_is_learned_not_transcribed():
+def test_steady_noise_that_starts_later_is_learned_after_one_segment():
     seg = Segmenter()
-    assert feed_all(seg, blocks(1.5, 15) + blocks(30, 1500)) == []
-    assert seg.threshold > 4000
+    assert len(feed_all(seg, blocks(1.5, 15) + blocks(30, 1500))) <= 1
+    assert seg.threshold > 1500
     assert len(feed_all(seg, blocks(1, 12000) + blocks(1, 1500))) == 1
+
+
+def test_never_deaf_to_normal_speech_after_long_loud_sound():
+    """The bug: 12 s of video or talk made Jarvis ignore every later "Jarvis" until silence."""
+    seg = Segmenter()
+    feed_all(seg, blocks(1, 15))
+    feed_all(seg, blocks(40, 1200))          # a video playing in the background
+    assert seg.threshold < 6000
+    heard = feed_all(seg, blocks(0.5, 1200) + blocks(1.2, 6000) + blocks(1.2, 1200))
+    assert len(heard) == 1
+
+
+def test_floor_recovers_within_seconds_after_noise_stops():
+    seg = Segmenter()
+    feed_all(seg, blocks(1, 15) + blocks(30, 1500))
+    feed_all(seg, blocks(3, 15))
+    assert seg.threshold == 400.0
+    assert len(feed_all(seg, blocks(1, 1500) + blocks(1, 15))) == 1
+
+
+def test_long_sentence_is_kept_not_discarded():
+    seg = Segmenter()
+    out = feed_all(seg, blocks(1, 15) + blocks(14, 4000) + blocks(1, 15))
+    assert out and out[0].size >= 11 * BLOCK * 10
 
 
 
@@ -126,3 +150,14 @@ def test_bare_stop_only_when_addressed(text):
 ])
 def test_not_a_stop(text):
     assert not is_stop(text, addressed=True)
+
+
+
+@pytest.mark.parametrize("video, voice", [(1500, 4000), (2000, 5000), (1000, 3000), (600, 2500)])
+def test_heard_over_background_video(video, voice):
+    seg = Segmenter()
+    feed_all(seg, blocks(1, 15) + blocks(40, video))
+    heard = feed_all(seg, blocks(0.5, video) + blocks(1.5, voice) + blocks(1.5, video))
+    assert len(heard) == 1
+    feed_all(seg, blocks(2, 15))
+    assert seg.threshold == 400.0

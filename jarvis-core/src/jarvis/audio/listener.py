@@ -15,8 +15,16 @@ MIN_VOICED_BLOCKS = 4
 MAX_BLOCKS = 120
 CALIBRATION_BLOCKS = 10
 MIN_THRESHOLD = 400.0
-NOISE_MULTIPLE = 4.0
-RELEASE_RATIO = 0.6
+# Speech starts at about twice the background plus a margin, and ends when the sound falls back
+# near the background. The old rule (four times the background, ending at 60% of that) left
+# Jarvis deaf to a normal voice whenever a video or music had been playing.
+START_RATIO, START_MARGIN = 2.0, 300.0
+END_RATIO, END_MARGIN = 1.3, 150.0
+# The background is the quiet end (20th percentile) of the last 5 s, so it falls back within a
+# second once a noise stops.
+HISTORY_BLOCKS = 50
+FLOOR_PERCENTILE = 20
+MAX_NOISE = 4000.0
 
 
 def rms(block: np.ndarray) -> float:
@@ -28,7 +36,8 @@ class Segmenter:
 
     def __init__(self) -> None:
         self.noise = 100.0
-        self._calibration: list[float] = []
+        self._history: deque[float] = deque(maxlen=HISTORY_BLOCKS)
+        self._calibrated = 0
         self.reset()
 
     def reset(self) -> None:
@@ -40,13 +49,22 @@ class Segmenter:
 
     @property
     def threshold(self) -> float:
-        return max(MIN_THRESHOLD, self.noise * NOISE_MULTIPLE)
+        return max(MIN_THRESHOLD, self.noise * START_RATIO + START_MARGIN)
+
+    @property
+    def release(self) -> float:
+        return self.noise * END_RATIO + END_MARGIN
+
+    def _learn(self, levels) -> None:
+        self._history.extend(levels)
+        floor = float(np.percentile(self._history, FLOOR_PERCENTILE))
+        self.noise = min(MAX_NOISE, max(1.0, floor))
 
     def feed(self, block: np.ndarray) -> np.ndarray | None:
         level = rms(block)
-        if len(self._calibration) < CALIBRATION_BLOCKS:
-            self._calibration.append(level)
-            self.noise = float(np.mean(self._calibration))
+        if self._calibrated < CALIBRATION_BLOCKS:
+            self._calibrated += 1
+            self._learn([level])
             return None
 
         if not self._active:
@@ -57,16 +75,18 @@ class Segmenter:
                     self._active, self._speech, self._quiet = True, list(self._pre), 0
             else:
                 self._loud = 0
-                self.noise = 0.95 * self.noise + 0.05 * level
+                self._learn([level])
             return None
 
         self._speech.append(block)
-        self._quiet = self._quiet + 1 if level < self.threshold * RELEASE_RATIO else 0
+        self._quiet = self._quiet + 1 if level < self.release else 0
         if len(self._speech) >= MAX_BLOCKS:
-            # Nobody speaks for 12 s without a pause; this is a fan or traffic. Learn its level.
-            self.noise = float(np.median([rms(b) for b in self._speech]))
+            # 12 s without a pause: a long sentence or a steady sound. Let whisper judge it, and
+            # count its quiet end towards the floor so a steady fan stops re-triggering.
+            speech = self._speech
+            self._learn(rms(b) for b in speech)
             self.reset()
-            return None
+            return np.concatenate(speech).ravel()
         if self._quiet < END_SILENCE_BLOCKS:
             return None
         speech, voiced = self._speech, len(self._speech) - self._quiet
